@@ -3,14 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/navigation_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
+import '../widgets/dynamic_bottom_nav_bar.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.read(navigationIndexProvider.notifier).state = 2;
     final user = ref.watch(authProvider).currentUser!;
     final themeMode = ref.watch(themeProvider);
 
@@ -51,10 +54,7 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: AppSizes.sm),
             Text(
               user.roleLabel,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(color: AppColors.grey600),
+              style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: AppSizes.lg),
 
@@ -64,10 +64,10 @@ class ProfileScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(AppSizes.lg),
                 child: Column(
                   children: [
-                    _buildInfoTile('Username', user.username),
-                    _buildInfoTile('Email', user.email),
-                    _buildInfoTile('Departemen', user.department),
-                    _buildInfoTile('Role', user.roleLabel),
+                    _buildInfoTile(context, 'Username', user.username),
+                    _buildInfoTile(context, 'Email', user.email),
+                    _buildInfoTile(context, 'Departemen', user.department),
+                    _buildInfoTile(context, 'Role', user.roleLabel),
                   ],
                 ),
               ),
@@ -166,10 +166,11 @@ class ProfileScreen extends ConsumerWidget {
           ],
         ),
       ),
+      bottomNavigationBar: const DynamicBottomNavBar(currentIndex: 2),
     );
   }
 
-  Widget _buildInfoTile(String label, String value) {
+  Widget _buildInfoTile(BuildContext context, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSizes.md),
       child: Row(
@@ -177,8 +178,10 @@ class ProfileScreen extends ConsumerWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: AppColors.grey600,
+            style: TextStyle(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.grey500
+                  : AppColors.grey600,
               fontWeight: FontWeight.w500,
             ),
           ),

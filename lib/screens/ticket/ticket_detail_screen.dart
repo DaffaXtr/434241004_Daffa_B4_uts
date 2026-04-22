@@ -16,8 +16,7 @@ class TicketDetailScreen extends ConsumerStatefulWidget {
   const TicketDetailScreen({super.key, required this.ticketId});
 
   @override
-  ConsumerState<TicketDetailScreen> createState() =>
-      _TicketDetailScreenState();
+  ConsumerState<TicketDetailScreen> createState() => _TicketDetailScreenState();
 }
 
 class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
@@ -34,6 +33,47 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
   void dispose() {
     _commentCtrl.dispose();
     super.dispose();
+  }
+
+  // --- FUNGSI BARU: Menampilkan Dialog untuk memilih Staff ---
+  void _showAssignDialog(BuildContext context, String ticketId) {
+    // Filter hanya user yang merupakan staff (helpdesk atau admin)
+    final staffUsers = dummyUsers
+        .where((u) => u.role == UserRole.helpdesk || u.role == UserRole.admin)
+        .toList();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Tugaskan ke Staff'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: staffUsers.length,
+            itemBuilder: (context, index) {
+              final staff = staffUsers[index];
+              return ListTile(
+                leading: CircleAvatar(child: Text(staff.name[0])),
+                title: Text(staff.name),
+                subtitle: Text(staff.department),
+                onTap: () {
+                  // Memanggil notifier untuk update assignedToId
+                  ref
+                      .read(ticketProvider.notifier)
+                      .assignTicket(ticketId, staff.id);
+                  
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Tiket ditugaskan ke ${staff.name}')),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -83,30 +123,34 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
           if (isStaff)
             PopupMenuButton<String>(
               onSelected: (value) {
-                if (value == 'resolve') {
+                if (value == 'assign') {
+                  _showAssignDialog(context, ticket.id);
+                } else if (value == 'resolve') {
                   ref
                       .read(ticketProvider.notifier)
                       .updateStatus(ticket.id, TicketStatus.resolved);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Status diubah menjadi Resolved')),
-                  );
                 } else if (value == 'close') {
                   ref
                       .read(ticketProvider.notifier)
                       .updateStatus(ticket.id, TicketStatus.closed);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Status diubah menjadi Closed')),
-                  );
                 } else if (value == 'progress') {
                   ref
                       .read(ticketProvider.notifier)
                       .updateStatus(ticket.id, TicketStatus.inProgress);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Status diubah menjadi In Progress')),
-                  );
                 }
               },
               itemBuilder: (BuildContext context) => [
+                const PopupMenuItem(
+                  value: 'assign',
+                  child: Row(
+                    children: [
+                      Icon(Icons.person_add_alt_1, size: 20),
+                      SizedBox(width: 8),
+                      Text('Tugaskan Staff'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
                 const PopupMenuItem(
                   value: 'progress',
                   child: Text('Update ke In Progress'),
@@ -153,7 +197,9 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(AppSizes.md),
                 decoration: BoxDecoration(
-                  color: AppColors.grey100,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.darkContainer
+                      : AppColors.grey100,
                   borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                 ),
                 child: Column(
@@ -162,8 +208,10 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                     _buildInfoRow('Prioritas', ticket.priorityLabel),
                     _buildInfoRow('Kategori', ticket.categoryLabel),
                     _buildInfoRow('Reporter', reporter.name),
-                    if (assignee != null)
-                      _buildInfoRow('Ditugaskan ke', assignee.name),
+                    _buildInfoRow(
+                      'Ditugaskan ke',
+                      assignee?.name ?? 'Belum ada',
+                    ),
                     _buildInfoRow(
                       'Dibuat',
                       '${ticket.createdAt.day}/${ticket.createdAt.month}/${ticket.createdAt.year}',
@@ -291,8 +339,10 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: AppColors.grey600,
+            style: TextStyle(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.grey500
+                  : AppColors.grey600,
               fontWeight: FontWeight.w500,
             ),
           ),

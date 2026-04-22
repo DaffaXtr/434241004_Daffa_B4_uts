@@ -6,17 +6,20 @@ import '../../providers/dashboard_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/ticket_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/navigation_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../models/user_model.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/ticket_card.dart';
+import '../widgets/dynamic_bottom_nav_bar.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.read(navigationIndexProvider.notifier).state = 0;
     final user = ref.watch(authProvider).currentUser!;
     final stats = ref.watch(dashboardStatsProvider);
     final tickets = ref.watch(ticketProvider).tickets;
@@ -68,7 +71,6 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      drawer: _buildDrawer(context, ref, user),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSizes.md),
         child: Column(
@@ -161,90 +163,20 @@ class DashboardScreen extends ConsumerWidget {
               ),
 
             const SizedBox(height: AppSizes.lg),
-
-            // Create Ticket Button
-            if (user.role == UserRole.user)
-              SizedBox(
-                width: double.infinity,
-                height: AppSizes.buttonHeight,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.add),
-                  label: const Text('Buat Tiket Baru'),
-                  onPressed: () => context.push('/create-ticket'),
-                ),
-              ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildDrawer(BuildContext context, WidgetRef ref, UserModel user) {
-    return Drawer(
-      child: ListView(
-        children: [
-          UserAccountsDrawerHeader(
-            accountName: Text(user.name),
-            accountEmail: Text(user.email),
-            currentAccountPicture: CircleAvatar(
+      floatingActionButton: user.role == UserRole.user
+          ? FloatingActionButton.extended(
+              onPressed: () => context.push('/create-ticket'),
+              icon: const Icon(Icons.add),
+              label: const Text('Tiket Baru'),
               backgroundColor: AppColors.primary,
-              child: Text(
-                user.name[0].toUpperCase(),
-                style: const TextStyle(
-                  color: AppColors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.dashboard),
-            title: const Text('Dashboard'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/dashboard');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.confirmation_number),
-            title: const Text('Tiket'),
-            onTap: () {
-              Navigator.pop(context);
-              context.push('/tickets');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.notifications_outlined),
-            title: const Text('Notifikasi'),
-            onTap: () {
-              Navigator.pop(context);
-              context.push('/notifications');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: const Text('Profile'),
-            onTap: () {
-              Navigator.pop(context);
-              context.push('/profile');
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout, color: AppColors.statusOpen),
-            title: const Text('Logout'),
-            onTap: () {
-              Navigator.pop(context);
-              ref.read(authProvider.notifier).logout();
-              context.go('/login');
-            },
-          ),
-        ],
-      ),
+              foregroundColor: AppColors.white,
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      bottomNavigationBar: const DynamicBottomNavBar(currentIndex: 0),
     );
   }
 }

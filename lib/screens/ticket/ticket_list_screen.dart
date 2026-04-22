@@ -5,14 +5,17 @@ import 'package:go_router/go_router.dart';
 import '../../models/ticket_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/ticket_provider.dart';
+import '../../providers/navigation_provider.dart';
 import '../../core/constants/app_sizes.dart';
 import '../widgets/ticket_card.dart';
+import '../widgets/dynamic_bottom_nav_bar.dart';
 
 class TicketListScreen extends ConsumerWidget {
   const TicketListScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.read(navigationIndexProvider.notifier).state = 1;
     final ticketState = ref.watch(ticketProvider);
     final user = ref.watch(authProvider).currentUser;
 
@@ -116,6 +119,7 @@ class TicketListScreen extends ConsumerWidget {
           ),
         ],
       ),
+      bottomNavigationBar: const DynamicBottomNavBar(currentIndex: 1),
     );
   }
 }

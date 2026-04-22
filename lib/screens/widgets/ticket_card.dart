@@ -23,6 +23,18 @@ class TicketCard extends StatelessWidget {
     }
   }
 
+  Color _getCategoryBg(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? AppColors.darkContainerHigh
+        : AppColors.grey200;
+  }
+
+  Color _getCategoryText(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? AppColors.grey300
+        : AppColors.grey700;
+  }
+
   String _timeAgo(DateTime dt) {
     final diff = DateTime.now().difference(dt);
     if (diff.inMinutes < 60) {
@@ -108,13 +120,13 @@ class TicketCard extends StatelessWidget {
                       vertical: AppSizes.xs,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.grey200.withOpacity(0.5),
+                      color: _getCategoryBg(context).withOpacity(0.5),
                       borderRadius: BorderRadius.circular(AppSizes.radiusSm),
                     ),
                     child: Text(
                       ticket.categoryLabel,
                       style: TextStyle(
-                        color: AppColors.grey700,
+                        color: _getCategoryText(context),
                         fontSize: AppSizes.fontXs,
                       ),
                     ),

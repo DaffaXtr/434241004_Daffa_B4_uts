@@ -77,7 +77,9 @@ class CommentBubble extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isCurrentUser
                     ? AppColors.primary.withOpacity(0.1)
-                    : AppColors.grey100,
+                    : (Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.darkContainer
+                        : AppColors.grey100),
                 borderRadius: BorderRadius.circular(AppSizes.radiusLg),
                 border: Border.all(
                   color: comment.isInternal
