@@ -76,15 +76,27 @@ class CommentBubble extends StatelessWidget {
               padding: const EdgeInsets.all(AppSizes.md),
               decoration: BoxDecoration(
                 color: isCurrentUser
-                    ? AppColors.primary.withValues(alpha: 0.1)
+                    ? AppColors.primary
                     : (Theme.of(context).brightness == Brightness.dark
                         ? AppColors.darkContainer
-                        : AppColors.grey100),
-                borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                        : Colors.white),
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: Radius.circular(isCurrentUser ? 20 : 0),
+                  bottomRight: Radius.circular(isCurrentUser ? 0 : 20),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
                 border: Border.all(
                   color: comment.isInternal
-                      ? AppColors.statusOpen.withValues(alpha: 0.3)
-                      : Colors.transparent,
+                      ? AppColors.statusOpen
+                      : (isCurrentUser ? AppColors.primary : Colors.black.withOpacity(0.02)),
                 ),
               ),
               child: Column(
@@ -92,12 +104,19 @@ class CommentBubble extends StatelessWidget {
                 children: [
                   Text(
                     author.name,
-                    style: Theme.of(context).textTheme.titleSmall,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: isCurrentUser ? Colors.white70 : null,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                   const SizedBox(height: AppSizes.xs),
                   Text(
                     comment.content,
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: isCurrentUser ? Colors.white : null,
+                      height: 1.3,
+                    ),
                   ),
                 ],
               ),
@@ -107,7 +126,10 @@ class CommentBubble extends StatelessWidget {
             padding: const EdgeInsets.only(top: AppSizes.xs),
             child: Text(
               _timeAgo(comment.createdAt),
-              style: Theme.of(context).textTheme.bodySmall,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.grey500,
+                fontSize: 10,
+              ),
             ),
           ),
         ],

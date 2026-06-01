@@ -9,110 +9,263 @@ import '../../core/constants/app_sizes.dart';
 class NotificationScreen extends ConsumerWidget {
   const NotificationScreen({super.key});
 
+  String _timeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 60) {
+      return '${diff.inMinutes}m';
+    } else if (diff.inHours < 24) {
+      return '${diff.inHours}h';
+    } else if (diff.inDays < 7) {
+      return '${diff.inDays}d';
+    }
+    return '${diff.inDays ~/ 7}w';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifs = ref.watch(notificationProvider);
+    final unreadCount = notifs.where((n) => !n.isRead).length;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifikasi'),
-        actions: [
-          if (notifs.any((n) => !n.isRead))
-            TextButton(
-              onPressed: () {
-                ref.read(notificationProvider.notifier).markAllRead();
-              },
-              child: const Text('Tandai Semua'),
-            ),
-        ],
-      ),
-      body: notifs.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      backgroundColor: isDark ? AppColors.darkBg : const Color(0xFFF8FAFC),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Custom Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSizes.sm, vertical: AppSizes.md),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Icon(
-                    Icons.notifications_none,
-                    size: 64,
-                    color: Colors.grey,
+                  IconButton(
+                    icon: Icon(Icons.arrow_back_ios_new, size: 20, color: isDark ? Colors.white : Colors.black87),
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/');
+                      }
+                    },
                   ),
-                  const SizedBox(height: AppSizes.md),
                   Text(
-                    'Tidak ada notifikasi',
-                    style: Theme.of(context).textTheme.titleMedium,
+                    'Notifikasi',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.statusOpen,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '$unreadCount BARU',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
-            )
-          : ListView.builder(
-              itemCount: notifs.length,
-              itemBuilder: (context, index) {
-                final notif = notifs[index];
-                return Dismissible(
-                  key: Key(notif.id),
-                  child: Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.md,
-                      vertical: AppSizes.sm,
-                    ),
-                    color: notif.isRead ? null : AppColors.primaryLight,
-                    child: ListTile(
-                      leading: Icon(
-                        _getIconForType(notif.type),
-                        color: _getColorForType(notif.type),
-                      ),
-                      title: Text(notif.title),
-                      subtitle: Text(notif.body),
-                      trailing: notif.isRead
-                          ? null
-                          : Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius:
-                                    BorderRadius.circular(AppSizes.radiusCircle),
-                              ),
-                            ),
-                      onTap: () {
-                        ref
-                            .read(notificationProvider.notifier)
-                            .markAsRead(notif.id);
-                        if (notif.ticketId != null) {
-                          context.push('/tickets/${notif.ticketId}');
-                        }
-                      },
+            ),
+            
+            // Sub-header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'TERBARU',
+                    style: TextStyle(
+                      color: AppColors.grey500,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      letterSpacing: 1.2,
                     ),
                   ),
-                );
-              },
+                  TextButton(
+                    onPressed: unreadCount > 0
+                        ? () => ref.read(notificationProvider.notifier).markAllRead()
+                        : null,
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    child: const Text('Tandai semua dibaca'),
+                  ),
+                ],
+              ),
             ),
+            
+            // Notification List
+            Expanded(
+              child: notifs.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.darkContainer : Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.notifications_off_outlined,
+                              size: 64,
+                              color: isDark ? AppColors.grey600 : Colors.grey.shade300,
+                            ),
+                          ),
+                          const SizedBox(height: AppSizes.md),
+                          Text(
+                            'Belum ada notifikasi',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: isDark ? AppColors.grey400 : AppColors.grey600,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 8),
+                      itemCount: notifs.length,
+                      itemBuilder: (context, index) {
+                        final notif = notifs[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: InkWell(
+                            onTap: () {
+                              ref.read(notificationProvider.notifier).markAsRead(notif.id);
+                              if (notif.ticketId != null) {
+                                context.push('/tickets/${notif.ticketId}');
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              clipBehavior: Clip.hardEdge,
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.darkSurface : Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  if (!isDark)
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.03),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                ],
+                              ),
+                              child: IntrinsicHeight(
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    // Left Border for Unread
+                                    Container(
+                                      width: 4,
+                                      color: notif.isRead ? Colors.transparent : AppColors.primary,
+                                    ),
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            // Icon
+                                            Container(
+                                              padding: const EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                color: notif.isRead 
+                                                    ? (isDark ? AppColors.darkBg : Colors.grey.shade100)
+                                                    : AppColors.primary.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: Icon(
+                                                _getIconForType(notif.type),
+                                                color: notif.isRead ? AppColors.grey500 : AppColors.primary,
+                                                size: 24,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            
+                                            // Text Content
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      Expanded(
+                                                        child: Text(
+                                                          notif.title,
+                                                          style: TextStyle(
+                                                            fontWeight: notif.isRead ? FontWeight.w600 : FontWeight.bold,
+                                                            fontSize: 15,
+                                                            color: isDark ? Colors.white : Colors.black87,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        _timeAgo(notif.createdAt),
+                                                        style: TextStyle(
+                                                          color: notif.isRead ? AppColors.grey500 : AppColors.primary,
+                                                          fontSize: 12,
+                                                          fontWeight: notif.isRead ? FontWeight.normal : FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 6),
+                                                  Text(
+                                                    notif.body,
+                                                    style: TextStyle(
+                                                      color: isDark ? AppColors.grey400 : AppColors.grey600,
+                                                      fontSize: 13,
+                                                      height: 1.4,
+                                                    ),
+                                                    maxLines: 2,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   IconData _getIconForType(NotifType notif) {
     switch (notif) {
       case NotifType.ticketCreated:
-        return Icons.add_circle_outline;
+        return Icons.note_add_outlined;
       case NotifType.statusUpdated:
-        return Icons.update;
+        return Icons.change_circle_outlined;
       case NotifType.newReply:
-        return Icons.reply;
+        return Icons.chat_bubble_outline;
       case NotifType.ticketAssigned:
-        return Icons.assignment_ind;
-    }
-  }
-
-  Color _getColorForType(NotifType notif) {
-    switch (notif) {
-      case NotifType.ticketCreated:
-        return AppColors.statusResolved;
-      case NotifType.statusUpdated:
-        return AppColors.statusInProgress;
-      case NotifType.newReply:
-        return AppColors.primary;
-      case NotifType.ticketAssigned:
-        return AppColors.secondary;
+        return Icons.person_add_alt_1_outlined;
     }
   }
 }

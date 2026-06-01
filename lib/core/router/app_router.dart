@@ -5,13 +5,14 @@ import '/providers/auth_provider.dart';
 import '/screens/splash/splash_screen.dart';
 import '/screens/auth/login_screen.dart';
 import '/screens/auth/register_screen.dart';
+import '/screens/auth/forgot_password_screen.dart';
 import '/screens/dashboard/dashboard_screen.dart';
 import '/screens/ticket/ticket_list_screen.dart';
 import '/screens/ticket/ticket_detail_screen.dart';
 import '/screens/ticket/create_ticket_screen.dart';
 import '/screens/notification/notification_screen.dart';
 import '/screens/profile/profile_screen.dart';
-
+import '/screens/layout/main_layout.dart';
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
 
@@ -22,14 +23,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAtSplash = state.matchedLocation == '/splash';
       final isAtLogin = state.matchedLocation == '/login';
       final isAtRegister = state.matchedLocation == '/register';
+      final isAtForgotPass = state.matchedLocation == '/forgot-password';
 
       if (isAtSplash) return null;
 
-      if (!isLoggedIn && !isAtLogin && !isAtRegister) {
+      if (!isLoggedIn && !isAtLogin && !isAtRegister && !isAtForgotPass) {
         return '/login';
       }
 
-      if (isLoggedIn && (isAtLogin || isAtRegister)) {
+      if (isLoggedIn && (isAtLogin || isAtRegister || isAtForgotPass)) {
         return '/dashboard';
       }
 
@@ -49,12 +51,40 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
-        path: '/dashboard',
-        builder: (context, state) => const DashboardScreen(),
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
       ),
-      GoRoute(
-        path: '/tickets',
-        builder: (context, state) => const TicketListScreen(),
+      ShellRoute(
+        builder: (context, state, child) => MainLayout(child: child),
+        routes: [
+          GoRoute(
+            path: '/dashboard',
+            pageBuilder: (context, state) => CustomTransitionPage(
+              child: const DashboardScreen(),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+            ),
+          ),
+          GoRoute(
+            path: '/tickets',
+            pageBuilder: (context, state) => CustomTransitionPage(
+              child: const TicketListScreen(),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+            ),
+          ),
+          GoRoute(
+            path: '/profile',
+            pageBuilder: (context, state) => CustomTransitionPage(
+              child: const ProfileScreen(),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: '/tickets/:id',
@@ -70,10 +100,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationScreen(),
-      ),
-      GoRoute(
-        path: '/profile',
-        builder: (context, state) => const ProfileScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

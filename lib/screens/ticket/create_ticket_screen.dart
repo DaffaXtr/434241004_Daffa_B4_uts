@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../models/ticket_model.dart';
 import '../../providers/ticket_provider.dart';
 import '../../core/constants/app_sizes.dart';
+import '../../core/constants/app_colors.dart';
 
 class CreateTicketScreen extends ConsumerStatefulWidget {
   const CreateTicketScreen({super.key});
@@ -52,171 +53,221 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
   @override
   Widget build(BuildContext context) {
     final isLoading = ref.watch(ticketProvider).isLoading;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final inputDecoration = InputDecoration(
+      filled: true,
+      fillColor: isDark ? AppColors.darkSurface : Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade200),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+      ),
+    );
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Buat Tiket Baru'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSizes.lg),
+      backgroundColor: isDark ? AppColors.darkBg : const Color(0xFFF8FAFC),
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title Field
-            Text(
-              'Judul Tiket',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: AppSizes.sm),
-            TextField(
-              controller: _titleCtrl,
-              enabled: !isLoading,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                hintText: 'Tulis judul tiket...',
-              ),
-            ),
-            const SizedBox(height: AppSizes.lg),
-
-            // Description Field
-            Text(
-              'Deskripsi',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: AppSizes.sm),
-            TextField(
-              controller: _descCtrl,
-              enabled: !isLoading,
-              maxLines: 5,
-              decoration: const InputDecoration(
-                hintText: 'Jelaskan masalah secara detail...',
-                alignLabelWithHint: true,
-              ),
-            ),
-            const SizedBox(height: AppSizes.lg),
-
-            // Priority
-            Text(
-              'Prioritas',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: AppSizes.sm),
-            DropdownButtonFormField<TicketPriority>(
-              initialValue: _priority,
-              items: TicketPriority.values
-                  .map((p) => DropdownMenuItem(
-                        value: p,
-                        child: Text(p.toString().split('.').last.toUpperCase()),
-                      ))
-                  .toList(),
-              onChanged: !isLoading ? (value) => setState(() => _priority = value!) : null,
-              decoration: const InputDecoration(
-                hintText: 'Pilih prioritas',
-              ),
-            ),
-            const SizedBox(height: AppSizes.lg),
-
-            // Category
-            Text(
-              'Kategori',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: AppSizes.sm),
-            DropdownButtonFormField<TicketCategory>(
-              initialValue: _category,
-              items: TicketCategory.values
-                  .map((c) => DropdownMenuItem(
-                        value: c,
-                        child: Text(c.toString().split('.').last.toUpperCase()),
-                      ))
-                  .toList(),
-              onChanged: !isLoading ? (value) => setState(() => _category = value!) : null,
-              decoration: const InputDecoration(
-                hintText: 'Pilih kategori',
-              ),
-            ),
-            const SizedBox(height: AppSizes.lg),
-
-            // Attachments (simulation)
-            Text(
-              'Lampiran (Opsional)',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: AppSizes.sm),
-            Container(
-              padding: const EdgeInsets.all(AppSizes.md),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                color: Colors.grey.withValues(alpha: 0.05),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // Custom Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.image),
-                        label: const Text('Dari Galeri'),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Fitur ini adalah simulasi'),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: AppSizes.md),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.camera_alt),
-                        label: const Text('Dari Kamera'),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Fitur ini adalah simulasi'),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                  IconButton(
+                    icon: Icon(Icons.arrow_back_ios_new, size: 20, color: isDark ? Colors.white : Colors.black87),
+                    onPressed: () => context.pop(),
                   ),
-                  if (_attachments.isNotEmpty) ...[
-                    const SizedBox(height: AppSizes.md),
-                    Wrap(
-                      spacing: AppSizes.sm,
-                      children: _attachments
-                          .map((file) => Chip(
-                                label: Text(file),
-                                onDeleted: () {
-                                  setState(() => _attachments.remove(file));
-                                },
-                              ))
-                          .toList(),
+                  Text(
+                    'Buat Tiket Baru',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
-                  ],
+                  ),
+                  const SizedBox(width: 48), // Balancing space
                 ],
               ),
             ),
-            const SizedBox(height: AppSizes.xxl),
 
-            // Submit Button
-            SizedBox(
-              width: double.infinity,
-              height: AppSizes.buttonHeight,
-              child: ElevatedButton(
-                onPressed: isLoading ? null : _submit,
-                child: isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSizes.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Judul Tiket',
+                      style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
+                    ),
+                    const SizedBox(height: AppSizes.sm),
+                    TextField(
+                      controller: _titleCtrl,
+                      enabled: !isLoading,
+                      decoration: inputDecoration.copyWith(
+                        hintText: 'Tulis masalah utama secara singkat...',
+                        hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.lg),
+
+                    Text(
+                      'Deskripsi',
+                      style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
+                    ),
+                    const SizedBox(height: AppSizes.sm),
+                    TextField(
+                      controller: _descCtrl,
+                      enabled: !isLoading,
+                      maxLines: 5,
+                      decoration: inputDecoration.copyWith(
+                        hintText: 'Jelaskan masalah secara detail, langkah-langkah untuk mereproduksi, atau error yang muncul...',
+                        hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.lg),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Prioritas',
+                                style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
+                              ),
+                              const SizedBox(height: AppSizes.sm),
+                              DropdownButtonFormField<TicketPriority>(
+                                initialValue: _priority,
+                                items: TicketPriority.values
+                                    .map((p) => DropdownMenuItem(
+                                          value: p,
+                                          child: Text(p.toString().split('.').last.toUpperCase()),
+                                        ))
+                                    .toList(),
+                                onChanged: !isLoading ? (value) => setState(() => _priority = value!) : null,
+                                decoration: inputDecoration,
+                                icon: const Icon(Icons.keyboard_arrow_down),
+                              ),
+                            ],
                           ),
                         ),
-                      )
-                    : const Text('Buat Tiket'),
+                        const SizedBox(width: AppSizes.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Kategori',
+                                style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
+                              ),
+                              const SizedBox(height: AppSizes.sm),
+                              DropdownButtonFormField<TicketCategory>(
+                                initialValue: _category,
+                                items: TicketCategory.values
+                                    .map((c) => DropdownMenuItem(
+                                          value: c,
+                                          child: Text(c.toString().split('.').last.toUpperCase()),
+                                        ))
+                                    .toList(),
+                                onChanged: !isLoading ? (value) => setState(() => _category = value!) : null,
+                                decoration: inputDecoration,
+                                icon: const Icon(Icons.keyboard_arrow_down),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSizes.xl),
+
+                    Text(
+                      'Lampiran',
+                      style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
+                    ),
+                    const SizedBox(height: AppSizes.sm),
+                    // Dashed Attachment Box
+                    InkWell(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Simulasi buka lampiran')));
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkSurface : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark ? Colors.white24 : Colors.grey.shade300,
+                            style: BorderStyle.solid, // Flutter doesn't have native dashed borders easily, using solid with tint
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(Icons.cloud_upload_outlined, size: 48, color: AppColors.primary.withOpacity(0.5)),
+                            const SizedBox(height: 8),
+                            Text('Ketuk untuk mengunggah gambar/file', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54)),
+                            const SizedBox(height: 4),
+                            Text('Maks. 5MB (JPG, PNG, PDF)', style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    if (_attachments.isNotEmpty) ...[
+                      const SizedBox(height: AppSizes.md),
+                      Wrap(
+                        spacing: AppSizes.sm,
+                        children: _attachments
+                            .map((file) => Chip(
+                                  label: Text(file),
+                                  onDeleted: () => setState(() => _attachments.remove(file)),
+                                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                                  deleteIconColor: AppColors.primary,
+                                ))
+                            .toList(),
+                      ),
+                    ],
+
+                    const SizedBox(height: AppSizes.xxl),
+                    
+                    // Large Submit Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : _submit,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 0,
+                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                              )
+                            : const Text('Kirim Tiket', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.xl),
+                  ],
+                ),
               ),
             ),
           ],

@@ -38,20 +38,20 @@ class StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.md,
-        vertical: AppSizes.sm,
+        horizontal: 10,
+        vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: _color.withValues(alpha: 0.1),
-        border: Border.all(color: _color, width: 1),
-        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        color: _color.withOpacity(0.1),
+        border: Border.all(color: _color.withOpacity(0.5), width: 0.5),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
         _label,
         style: TextStyle(
           color: _color,
           fontWeight: FontWeight.w600,
-          fontSize: AppSizes.fontSm,
+          fontSize: 10,
         ),
       ),
     );

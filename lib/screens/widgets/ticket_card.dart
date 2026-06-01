@@ -3,12 +3,27 @@ import 'package:go_router/go_router.dart';
 import '../../models/ticket_model.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
+import '../../data/dummy/dummy_users.dart';
+import '../../data/dummy/dummy_comments.dart';
 import 'status_badge.dart';
 
 class TicketCard extends StatelessWidget {
   final TicketModel ticket;
 
   const TicketCard({super.key, required this.ticket});
+
+  Color _getStatusColor(TicketStatus status) {
+    switch (status) {
+      case TicketStatus.open:
+        return AppColors.statusOpen; // Red
+      case TicketStatus.inProgress:
+        return AppColors.statusInProgress; // Orange
+      case TicketStatus.resolved:
+        return AppColors.statusResolved; // Green
+      case TicketStatus.closed:
+        return AppColors.statusClosed; // Blue
+    }
+  }
 
   Color _getPriorityColor(TicketPriority priority) {
     switch (priority) {
@@ -23,121 +38,185 @@ class TicketCard extends StatelessWidget {
     }
   }
 
-  Color _getCategoryBg(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? AppColors.darkContainerHigh
-        : AppColors.grey200;
-  }
-
-  Color _getCategoryText(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? AppColors.grey300
-        : AppColors.grey700;
-  }
-
-  String _timeAgo(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 60) {
-      return '${diff.inMinutes} menit lalu';
-    } else if (diff.inHours < 24) {
-      return '${diff.inHours} jam lalu';
-    } else if (diff.inDays < 7) {
-      return '${diff.inDays} hari lalu';
-    }
-    return '${diff.inDays ~/ 7} minggu lalu';
-  }
-
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = _getStatusColor(ticket.status);
+    final bgColor = isDark ? AppColors.darkSurface : Colors.white;
+
+    // Get dummy avatars
+    final reporter = dummyUsers.firstWhere(
+      (u) => u.id == ticket.reporterId, 
+      orElse: () => dummyUsers.first
+    );
+    final assignee = ticket.assignedToId != null 
+        ? dummyUsers.firstWhere(
+            (u) => u.id == ticket.assignedToId,
+            orElse: () => dummyUsers.first
+          ) 
+        : null;
+        
+    final commentCount = dummyComments.where((c) => c.ticketId == ticket.id).length;
+
+    // Build the pill style
+    Widget buildPill(String text, Color color) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isDark ? color.withOpacity(0.2) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? Colors.transparent : color.withOpacity(0.5),
+            width: 0.5,
+          ),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: isDark ? Colors.white : color,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    }
+
     return GestureDetector(
       onTap: () => context.push('/tickets/${ticket.id}'),
-      child: Card(
-        margin: const EdgeInsets.symmetric(
-          horizontal: AppSizes.md,
-          vertical: AppSizes.sm,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSizes.md),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            if (!isDark)
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+          ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSizes.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header: ID dan Status
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    ticket.id,
-                    style: Theme.of(context).textTheme.titleMedium,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: baseColor, width: 4),
+              ),
+            ),
+            padding: const EdgeInsets.all(AppSizes.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Row: Pills and More Icon
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        StatusBadge(status: ticket.status),
+                        const SizedBox(width: 8),
+                        buildPill(ticket.priorityLabel, _getPriorityColor(ticket.priority)),
+                      ],
+                    ),
+                    Icon(Icons.more_vert, size: 20, color: isDark ? Colors.white70 : Colors.black54),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                
+                // Title and Description
+                Text(
+                  ticket.title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
-                  StatusBadge(status: ticket.status),
-                ],
-              ),
-              const SizedBox(height: AppSizes.sm),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  ticket.description,
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black54,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 16),
 
-              // Title
-              Text(
-                ticket.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: AppSizes.sm),
-
-              // Description
-              Text(
-                ticket.description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: AppSizes.md),
-
-              // Footer: Priority, Category, Time
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.sm,
-                      vertical: AppSizes.xs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getPriorityColor(ticket.priority).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-                    ),
-                    child: Text(
-                      ticket.priorityLabel,
-                      style: TextStyle(
-                        color: _getPriorityColor(ticket.priority),
-                        fontSize: AppSizes.fontXs,
-                        fontWeight: FontWeight.w600,
+                // Bottom Row: Avatars and Stats
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Avatars
+                    Container(
+                      height: 32,
+                      width: assignee != null ? 52 : 32,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkContainer : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          if (!isDark)
+                            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4),
+                        ],
+                      ),
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            left: 2,
+                            top: 2,
+                            child: CircleAvatar(
+                              radius: 14,
+                              backgroundColor: AppColors.primary,
+                              child: Text(
+                                reporter.name[0],
+                                style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                          if (assignee != null)
+                            Positioned(
+                              left: 20,
+                              top: 2,
+                              child: CircleAvatar(
+                                radius: 14,
+                                backgroundColor: AppColors.secondary,
+                                child: Text(
+                                  assignee.name[0],
+                                  style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.sm,
-                      vertical: AppSizes.xs,
+                    
+                    // Icons and Counts
+                    Row(
+                      children: [
+                        Icon(Icons.chat_bubble_outline, size: 16, color: isDark ? Colors.white70 : Colors.black54),
+                        const SizedBox(width: 4),
+                        Text(
+                          commentCount.toString(),
+                          style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black54, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(Icons.attach_file, size: 16, color: isDark ? Colors.white70 : Colors.black54),
+                        const SizedBox(width: 4),
+                        Text(
+                          ticket.attachments.length.toString(),
+                          style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black54, fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
-                    decoration: BoxDecoration(
-                      color: _getCategoryBg(context).withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-                    ),
-                    child: Text(
-                      ticket.categoryLabel,
-                      style: TextStyle(
-                        color: _getCategoryText(context),
-                        fontSize: AppSizes.fontXs,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    _timeAgo(ticket.createdAt),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

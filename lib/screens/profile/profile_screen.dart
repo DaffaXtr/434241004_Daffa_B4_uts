@@ -5,198 +5,358 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
-import '../widgets/dynamic_bottom_nav_bar.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
+
+  Widget _buildDetailRow(BuildContext context, String label, String value) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: isDark ? AppColors.grey400 : AppColors.grey600,
+            fontSize: 14,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSizes.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.logout, color: Colors.red, size: 32),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Keluar',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Apakah Anda yakin ingin keluar dari akun?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDark ? AppColors.grey400 : AppColors.grey600,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: isDark ? Colors.white : Colors.black87,
+                          side: BorderSide(color: isDark ? Colors.white24 : Colors.black12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context); // Close dialog
+                          ref.read(authProvider.notifier).logout();
+                          context.go('/login');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          elevation: 0,
+                        ),
+                        child: const Text('Keluar', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).currentUser;
     final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == ThemeMode.dark;
 
-    // Saat proses logout, currentUser akan menjadi null. Kita harus menangani ini
-    // untuk mencegah error "Null check operator used on a null value" 
-    // sebelum router selesai memindahkan halaman.
     if (user == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSizes.lg),
+      backgroundColor: isDark ? AppColors.darkBg : AppColors.primaryLight,
+      body: SafeArea(
         child: Column(
           children: [
-            // Avatar
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppSizes.radiusCircle),
-              ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSizes.md),
               child: Center(
                 child: Text(
-                  user.name[0].toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 48,
-                    color: AppColors.white,
+                  'Profil',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: AppSizes.lg),
-
-            // User Info
-            Text(
-              user.name,
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: AppSizes.sm),
-            Text(
-              user.roleLabel,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: AppSizes.lg),
-
-            // Info Card
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.lg),
+            
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg, vertical: AppSizes.md),
                 child: Column(
                   children: [
-                    _buildInfoTile(context, 'Username', user.username),
-                    _buildInfoTile(context, 'Email', user.email),
-                    _buildInfoTile(context, 'Departemen', user.department),
-                    _buildInfoTile(context, 'Role', user.roleLabel),
+                    // Avatar with Edit Button
+                    Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        Container(
+                          width: 110,
+                          height: 110,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: isDark ? AppColors.darkBg : Colors.white, width: 4),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.3),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              user.name[0].toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 48,
+                                color: AppColors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.darkSurface : Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 5)
+                            ]
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            size: 18,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSizes.xl),
+
+                    // User Info
+                    Text(
+                      user.name,
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        user.roleLabel,
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.xxl),
+
+                    // Account Details
+                    Container(
+                      padding: const EdgeInsets.all(AppSizes.lg),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkContainer : Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          if (!isDark)
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 15,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 8),
+                            ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Informasi Akun', style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white54 : Colors.black45)),
+                          const SizedBox(height: 16),
+                          _buildDetailRow(context, 'Username', user.username),
+                          Divider(height: 24, thickness: 1, color: isDark ? Colors.white10 : Colors.grey.shade100),
+                          _buildDetailRow(context, 'Email', user.email),
+                          Divider(height: 24, thickness: 1, color: isDark ? Colors.white10 : Colors.grey.shade100),
+                          _buildDetailRow(context, 'Departemen', user.department),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.xl),
+
+                    // Settings Details
+                    Container(
+                      padding: const EdgeInsets.all(AppSizes.md),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkContainer : Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          if (!isDark)
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 15,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 8),
+                            ),
+                        ],
+                      ),
+                      child: _buildMenuOption(
+                        context: context,
+                        icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                        title: 'Mode Gelap',
+                        trailing: Switch(
+                          value: isDark,
+                          onChanged: (value) => ref.read(themeProvider.notifier).toggle(),
+                          activeColor: AppColors.primary,
+                        ),
+                        onTap: () => ref.read(themeProvider.notifier).toggle(),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Destructive Logout Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showLogoutDialog(context, ref),
+                        icon: const Icon(Icons.logout),
+                        label: const Text('Keluar Akun', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.withOpacity(0.1),
+                          foregroundColor: Colors.red,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.xxl),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: AppSizes.lg),
-
-            // Settings Section
-            Text(
-              'Pengaturan',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: AppSizes.md),
-
-            // Theme Toggle
-            Card(
-              child: ListTile(
-                leading: Icon(
-                  themeMode == ThemeMode.dark
-                      ? Icons.light_mode
-                      : Icons.dark_mode,
-                ),
-                title: const Text('Mode Gelap'),
-                trailing: Switch(
-                  value: themeMode == ThemeMode.dark,
-                  onChanged: (value) {
-                    ref.read(themeProvider.notifier).toggle();
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSizes.md),
-
-            // Notification Settings (Dummy)
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.notifications),
-                title: const Text('Notifikasi'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Pengaturan notifikasi (simulasi)'),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: AppSizes.md),
-
-            // Change Password (Dummy)
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.lock),
-                title: const Text('Ubah Password'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Fitur ubah password (simulasi)'),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: AppSizes.xxl),
-
-            // Logout Button
-            SizedBox(
-              width: double.infinity,
-              height: AppSizes.buttonHeight,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.logout),
-                label: const Text('Logout'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.statusOpen,
-                ),
-                onPressed: () {
-                  ref.read(authProvider.notifier).logout();
-                  context.go('/login');
-                },
-              ),
-            ),
-
-            const SizedBox(height: AppSizes.md),
-
-            // About
-            Text(
-              'E-Ticketing Helpdesk v1.0.0',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: AppSizes.md),
-            Text(
-              'Universitas Airlangga - DIV Teknik Informatika',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
           ],
         ),
       ),
-      bottomNavigationBar: const DynamicBottomNavBar(currentIndex: 2),
     );
   }
 
-  Widget _buildInfoTile(BuildContext context, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSizes.md),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? AppColors.grey500
-                  : AppColors.grey600,
-              fontWeight: FontWeight.w500,
+  Widget _buildMenuOption({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Widget? trailing,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: AppColors.primary, size: 20),
             ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
             ),
-          ),
-        ],
+            trailing ?? Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: isDark ? AppColors.grey500 : AppColors.grey400,
+            ),
+          ],
+        ),
       ),
     );
   }
