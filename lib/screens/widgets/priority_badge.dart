@@ -29,7 +29,7 @@ class PriorityBadge extends StatelessWidget {
         vertical: AppSizes.sm,
       ),
       decoration: BoxDecoration(
-        color: _color.withOpacity(0.1),
+        color: _color.withValues(alpha: 0.1),
         border: Border.all(color: _color, width: 1),
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
       ),

@@ -2,8 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/dummy/dummy_notifications.dart';
 import '../models/notification_model.dart';
 
-class NotificationNotifier extends StateNotifier<List<NotificationModel>> {
-  NotificationNotifier() : super(List.from(dummyNotifications));
+class NotificationNotifier extends Notifier<List<NotificationModel>> {
+  
+  @override
+  List<NotificationModel> build() {
+    return List<NotificationModel>.from(dummyNotifications);
+  }
 
   int get unreadCount => state.where((n) => !n.isRead).length;
 
@@ -29,23 +33,23 @@ class NotificationNotifier extends StateNotifier<List<NotificationModel>> {
   void markAllRead() {
     state = state
         .map((n) => NotificationModel(
-          id: n.id,
-          title: n.title,
-          body: n.body,
-          type: n.type,
-          ticketId: n.ticketId,
-          isRead: true,
-          createdAt: n.createdAt,
-        ))
+              id: n.id,
+              title: n.title,
+              body: n.body,
+              type: n.type,
+              ticketId: n.ticketId,
+              isRead: true,
+              createdAt: n.createdAt,
+            ))
         .toList();
   }
 }
 
-final notificationProvider =
-    StateNotifierProvider<NotificationNotifier, List<NotificationModel>>(
-  (ref) => NotificationNotifier(),
+final NotifierProvider<NotificationNotifier, List<NotificationModel>> notificationProvider =
+    NotifierProvider<NotificationNotifier, List<NotificationModel>>(
+  () => NotificationNotifier(),
 );
 
-final unreadCountProvider = Provider<int>((ref) {
+final Provider<int> unreadCountProvider = Provider<int>((Ref ref) {
   return ref.watch(notificationProvider).where((n) => !n.isRead).length;
 });

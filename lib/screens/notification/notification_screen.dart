@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/notification_provider.dart';
+import '../../models/notification_model.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 
@@ -89,33 +90,29 @@ class NotificationScreen extends ConsumerWidget {
     );
   }
 
-  IconData _getIconForType(notif) {
+  IconData _getIconForType(NotifType notif) {
     switch (notif) {
-      case 0: // ticketCreated
+      case NotifType.ticketCreated:
         return Icons.add_circle_outline;
-      case 1: // statusUpdated
+      case NotifType.statusUpdated:
         return Icons.update;
-      case 2: // newReply
+      case NotifType.newReply:
         return Icons.reply;
-      case 3: // ticketAssigned
+      case NotifType.ticketAssigned:
         return Icons.assignment_ind;
-      default:
-        return Icons.notifications;
     }
   }
 
-  Color _getColorForType(notif) {
+  Color _getColorForType(NotifType notif) {
     switch (notif) {
-      case 0: // ticketCreated
+      case NotifType.ticketCreated:
         return AppColors.statusResolved;
-      case 1: // statusUpdated
+      case NotifType.statusUpdated:
         return AppColors.statusInProgress;
-      case 2: // newReply
+      case NotifType.newReply:
         return AppColors.primary;
-      case 3: // ticketAssigned
+      case NotifType.ticketAssigned:
         return AppColors.secondary;
-      default:
-        return AppColors.grey600;
     }
   }
 }

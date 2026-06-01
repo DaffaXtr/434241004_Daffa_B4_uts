@@ -40,12 +40,17 @@ class TicketState {
   }
 }
 
-class TicketNotifier extends StateNotifier<TicketState> {
-  TicketNotifier(this.ref) : super(const TicketState()) {
-    _loadTickets();
+// 1. Migrasi TicketNotifier menggunakan Notifier biasa
+class TicketNotifier extends Notifier<TicketState> {
+  
+  // Nilai awal didefinisikan di build() dan panggil _loadTickets() langsung di sini
+  @override
+  TicketState build() {
+    // Karena _loadTickets bersifat synchronous dan langsung mengubah state, 
+    // kita bisa panggil atau kembalikan state awal yang sudah terisi.
+    Future.microtask(() => _loadTickets());
+    return const TicketState();
   }
-
-  final Ref ref;
 
   void _loadTickets() {
     state = state.copyWith(isLoading: true);
@@ -56,10 +61,8 @@ class TicketNotifier extends StateNotifier<TicketState> {
 
     List<TicketModel> tickets;
     if (currentUser.role == UserRole.user) {
-      // User hanya lihat tiketnya sendiri
       tickets = dummyTickets.where((t) => t.reporterId == currentUser.id).toList();
     } else {
-      // Helpdesk & Admin lihat semua
       tickets = List.from(dummyTickets);
     }
 
@@ -126,20 +129,21 @@ class TicketNotifier extends StateNotifier<TicketState> {
   }
 }
 
-final ticketProvider = StateNotifierProvider<TicketNotifier, TicketState>(
-  (ref) => TicketNotifier(ref),
+// Gunakan NotifierProvider biasa
+final NotifierProvider<TicketNotifier, TicketState> ticketProvider = NotifierProvider<TicketNotifier, TicketState>(
+  () => TicketNotifier(),
 );
 
 // ── Comment provider (per tiket)
-class CommentNotifier extends StateNotifier<List<CommentModel>> {
-  CommentNotifier(this.ticketId) : super([]) {
-    _load();
-  }
-
+// 1. Kembalikan ke 'Notifier' biasa, tampung ticketId via constructor
+class CommentNotifier extends Notifier<List<CommentModel>> {
   final String ticketId;
+  CommentNotifier(this.ticketId);
 
-  void _load() {
-    state = dummyComments.where((c) => c.ticketId == ticketId).toList();
+  // 2. Override build() standar tanpa parameter, langsung gunakan ticketId dari constructor
+  @override
+  List<CommentModel> build() {
+    return dummyComments.where((c) => c.ticketId == ticketId).toList();
   }
 
   Future<void> addComment(String authorId, String content, {bool isInternal = false}) async {
@@ -156,6 +160,8 @@ class CommentNotifier extends StateNotifier<List<CommentModel>> {
   }
 }
 
-final commentProvider = StateNotifierProvider.family<CommentNotifier, List<CommentModel>, String>(
-  (ref, ticketId) => CommentNotifier(ticketId),
+// 3. Deklarasikan NotifierProvider.family dengan mencocokkan parameter (ref, arg) di fungsi anonimnya
+// Deklarasikan NotifierProvider.family dengan membiarkan Dart menebak argumen fungsi pembuatnya
+final commentProvider = NotifierProvider.family<CommentNotifier, List<CommentModel>, String>(
+  (ticketId) => CommentNotifier(ticketId),
 );

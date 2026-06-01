@@ -29,10 +29,17 @@ class AuthState {
   }
 }
 
-class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(const AuthState());
+// 1. Ganti 'StateNotifier' menjadi 'Notifier' biasa
+class AuthNotifier extends Notifier<AuthState> {
+  
+  // 2. Di Riverpod 3, nilai awal didefinisikan di dalam method build()
+  @override
+  AuthState build() {
+    return const AuthState();
+  }
 
   Future<bool> login(String username, String password) async {
+    // Properti 'state' otomatis tersedia di dalam Notifier
     state = state.copyWith(isLoading: true, errorMessage: null);
     await Future.delayed(const Duration(seconds: 1)); // simulasi network
 
@@ -84,6 +91,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 }
 
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
-  (ref) => AuthNotifier(),
+// 3. Ganti 'StateNotifierProvider' menjadi 'NotifierProvider'
+final NotifierProvider<AuthNotifier, AuthState> authProvider = NotifierProvider<AuthNotifier, AuthState>(
+  () => AuthNotifier(),
 );

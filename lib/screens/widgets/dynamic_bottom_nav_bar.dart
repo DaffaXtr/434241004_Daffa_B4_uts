@@ -8,9 +8,9 @@ class DynamicBottomNavBar extends ConsumerWidget {
   final int currentIndex;
 
   const DynamicBottomNavBar({
-    Key? key,
+    super.key,
     required this.currentIndex,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,7 +37,7 @@ class DynamicBottomNavBar extends ConsumerWidget {
       ],
       onTap: (index) {
         // Update provider
-        ref.read(navigationIndexProvider.notifier).state = index;
+        ref.read(navigationIndexProvider.notifier).setIndex(index);
         
         // Navigate based on index
         switch (index) {

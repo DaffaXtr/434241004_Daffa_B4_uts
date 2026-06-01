@@ -148,7 +148,7 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey),
                 borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                color: Colors.grey.withOpacity(0.05),
+                color: Colors.grey.withValues(alpha: 0.05),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

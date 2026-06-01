@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
-import '../../providers/navigation_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../widgets/dynamic_bottom_nav_bar.dart';
@@ -13,7 +12,6 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.read(navigationIndexProvider.notifier).state = 2;
     final user = ref.watch(authProvider).currentUser!;
     final themeMode = ref.watch(themeProvider);
 

@@ -102,7 +102,7 @@ class TicketCard extends StatelessWidget {
                       vertical: AppSizes.xs,
                     ),
                     decoration: BoxDecoration(
-                      color: _getPriorityColor(ticket.priority).withOpacity(0.1),
+                      color: _getPriorityColor(ticket.priority).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(AppSizes.radiusSm),
                     ),
                     child: Text(
@@ -120,7 +120,7 @@ class TicketCard extends StatelessWidget {
                       vertical: AppSizes.xs,
                     ),
                     decoration: BoxDecoration(
-                      color: _getCategoryBg(context).withOpacity(0.5),
+                      color: _getCategoryBg(context).withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(AppSizes.radiusSm),
                     ),
                     child: Text(

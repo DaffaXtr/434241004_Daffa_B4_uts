@@ -76,14 +76,14 @@ class CommentBubble extends StatelessWidget {
               padding: const EdgeInsets.all(AppSizes.md),
               decoration: BoxDecoration(
                 color: isCurrentUser
-                    ? AppColors.primary.withOpacity(0.1)
+                    ? AppColors.primary.withValues(alpha: 0.1)
                     : (Theme.of(context).brightness == Brightness.dark
                         ? AppColors.darkContainer
                         : AppColors.grey100),
                 borderRadius: BorderRadius.circular(AppSizes.radiusLg),
                 border: Border.all(
                   color: comment.isInternal
-                      ? AppColors.statusOpen.withOpacity(0.3)
+                      ? AppColors.statusOpen.withValues(alpha: 0.3)
                       : Colors.transparent,
                 ),
               ),

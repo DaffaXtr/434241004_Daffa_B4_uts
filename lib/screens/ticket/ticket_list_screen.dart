@@ -15,7 +15,9 @@ class TicketListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.read(navigationIndexProvider.notifier).state = 1;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(navigationIndexProvider.notifier).setIndex(1);
+    });
     final ticketState = ref.watch(ticketProvider);
     final user = ref.watch(authProvider).currentUser;
 

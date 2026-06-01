@@ -38,7 +38,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           _passwordCtrl.text,
         );
 
+    if (!context.mounted) return;
+
     if (success) {
+      // ignore: use_build_context_synchronously
       context.go('/dashboard');
     } else {
       final error = ref.read(authProvider).errorMessage;
@@ -62,7 +65,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               end: Alignment.bottomCenter,
               colors: [
                 AppColors.primary,
-                AppColors.primary.withOpacity(0.8),
+                AppColors.primary.withValues(alpha: 0.8),
               ],
             ),
           ),
@@ -97,7 +100,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Text(
                 'Sistem Pelaporan IT Terpadu',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.white.withOpacity(0.8),
+                      color: AppColors.white.withValues(alpha: 0.8),
                     ),
               ),
               const SizedBox(height: AppSizes.xxl),
@@ -111,7 +114,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   borderRadius: BorderRadius.circular(AppSizes.radiusLg),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withOpacity(0.1),
+                      color: AppColors.black.withValues(alpha: 0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 5),
                     ),
@@ -211,9 +214,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
                 padding: const EdgeInsets.all(AppSizes.md),
                 decoration: BoxDecoration(
-                  color: AppColors.white.withOpacity(0.2),
+                  color: AppColors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                  border: Border.all(color: AppColors.white.withOpacity(0.5)),
+                  border: Border.all(color: AppColors.white.withValues(alpha: 0.5)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,7 +247,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       child: Text(
         '$role: $user / $pass',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.white.withOpacity(0.9),
+              color: AppColors.white.withValues(alpha: 0.9),
             ),
       ),
     );

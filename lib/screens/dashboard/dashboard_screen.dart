@@ -6,7 +6,6 @@ import '../../providers/dashboard_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/ticket_provider.dart';
 import '../../providers/theme_provider.dart';
-import '../../providers/navigation_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../models/user_model.dart';
@@ -19,7 +18,6 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.read(navigationIndexProvider.notifier).state = 0;
     final user = ref.watch(authProvider).currentUser!;
     final stats = ref.watch(dashboardStatsProvider);
     final tickets = ref.watch(ticketProvider).tickets;
