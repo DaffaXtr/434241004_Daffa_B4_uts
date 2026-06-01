@@ -5,7 +5,9 @@ import '../data/dummy/dummy_comments.dart';
 import '../models/ticket_model.dart';
 import '../models/comment_model.dart';
 import '../models/user_model.dart';
+import '../models/history_model.dart';
 import 'auth_provider.dart';
+import 'history_provider.dart';
 
 // ── Ticket list state
 class TicketState {
@@ -46,6 +48,10 @@ class TicketNotifier extends Notifier<TicketState> {
   // Nilai awal didefinisikan di build() dan panggil _loadTickets() langsung di sini
   @override
   TicketState build() {
+    // Pantau perubahan user pada authProvider agar data tiket di-refresh otomatis
+    // saat terjadi proses login user baru maupun logout.
+    ref.watch(authProvider.select((state) => state.currentUser));
+
     // Karena _loadTickets bersifat synchronous dan langsung mengubah state, 
     // kita bisa panggil atau kembalikan state awal yang sudah terisi.
     Future.microtask(() => _loadTickets());
@@ -98,6 +104,13 @@ class TicketNotifier extends Notifier<TicketState> {
     state = state.copyWith(
       tickets: [newTicket, ...state.tickets],
       isLoading: false,
+    );
+
+    // Tambahkan log history untuk pembuatan tiket
+    ref.read(historyProvider(ticketId).notifier).addHistory(
+      action: HistoryAction.created,
+      description: 'Tiket berhasil dibuat',
+      actorId: currentUser.id,
     );
   }
 

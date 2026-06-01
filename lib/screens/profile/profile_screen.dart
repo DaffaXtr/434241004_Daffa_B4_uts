@@ -12,8 +12,15 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authProvider).currentUser!;
+    final user = ref.watch(authProvider).currentUser;
     final themeMode = ref.watch(themeProvider);
+
+    // Saat proses logout, currentUser akan menjadi null. Kita harus menangani ini
+    // untuk mencegah error "Null check operator used on a null value" 
+    // sebelum router selesai memindahkan halaman.
+    if (user == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
       appBar: AppBar(
