@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/dummy/dummy_users.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
+import '../main.dart'; // import supabase client
 
 class AuthState {
   final UserModel? currentUser;
@@ -29,32 +31,61 @@ class AuthState {
   }
 }
 
-// 1. Ganti 'StateNotifier' menjadi 'Notifier' biasa
 class AuthNotifier extends Notifier<AuthState> {
   
-  // 2. Di Riverpod 3, nilai awal didefinisikan di dalam method build()
   @override
   AuthState build() {
+    // Cek session saat ini jika user sudah login sebelumnya
+    _checkCurrentSession();
     return const AuthState();
   }
 
+  Future<void> _checkCurrentSession() async {
+    final session = supabase.auth.currentSession;
+    if (session != null) {
+      await _fetchUserProfile(session.user.id);
+    }
+  }
+
+  Future<void> _fetchUserProfile(String userId) async {
+    try {
+      final response = await supabase.from('users').select().eq('id', userId).single();
+      final user = UserModel.fromJson(response);
+      state = state.copyWith(currentUser: user, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: 'Gagal memuat profil: $e');
+    }
+  }
+
   Future<bool> login(String username, String password) async {
-    // Properti 'state' otomatis tersedia di dalam Notifier
     state = state.copyWith(isLoading: true, errorMessage: null);
-    await Future.delayed(const Duration(seconds: 1)); // simulasi network
 
     try {
-      final user = dummyUsers.firstWhere(
-        (u) => u.username == username && password == '123456',
-        orElse: () => throw Exception('Username atau password salah'),
+      // 1. Cari email berdasarkan username di tabel public.users
+      final userRecord = await supabase.from('users').select('email').eq('username', username).maybeSingle();
+      
+      if (userRecord == null) {
+        throw Exception('Username tidak ditemukan');
+      }
+
+      final email = userRecord['email'] as String;
+
+      // 2. Login menggunakan Supabase Auth dengan email yang ditemukan
+      final AuthResponse res = await supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
       );
 
-      state = state.copyWith(currentUser: user, isLoading: false);
-      return true;
+      if (res.user != null) {
+        await _fetchUserProfile(res.user!.id);
+        return true;
+      } else {
+        throw Exception('Gagal login');
+      }
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: e.toString().replaceAll('Exception: ', ''),
+        errorMessage: e is AuthException ? e.message : e.toString().replaceAll('Exception: ', ''),
       );
       return false;
     }
@@ -68,30 +99,106 @@ class AuthNotifier extends Notifier<AuthState> {
     required String department,
   }) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
-    await Future.delayed(const Duration(seconds: 1));
 
     try {
-      // Simulasi registrasi sukses
-      state = state.copyWith(isLoading: false);
-      return true;
+      // Cek apakah username sudah ada
+      final existingUser = await supabase.from('users').select('id').eq('username', username).maybeSingle();
+      if (existingUser != null) {
+        throw Exception('Username sudah digunakan');
+      }
+
+      // 1. Register di Supabase Auth
+      final AuthResponse res = await supabase.auth.signUp(
+        email: email,
+        password: password,
+      );
+
+      if (res.user != null) {
+        // 2. Insert profil ke tabel public.users
+        final newUser = UserModel(
+          id: res.user!.id,
+          name: name,
+          email: email,
+          username: username,
+          role: UserRole.user, // default role
+          department: department,
+        );
+
+        await supabase.from('users').insert(newUser.toJson());
+
+        state = state.copyWith(currentUser: newUser, isLoading: false);
+        return true;
+      }
+      return false;
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      state = state.copyWith(
+        isLoading: false, 
+        errorMessage: e is AuthException ? e.message : e.toString().replaceAll('Exception: ', '')
+      );
       return false;
     }
   }
 
   Future<void> resetPassword(String email) async {
     state = state.copyWith(isLoading: true);
-    await Future.delayed(const Duration(seconds: 1));
-    state = state.copyWith(isLoading: false);
+    try {
+      await supabase.auth.resetPasswordForEmail(email);
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: 'Gagal mereset password');
+    }
   }
 
-  void logout() {
+  Future<void> logout() async {
+    await supabase.auth.signOut();
     state = const AuthState();
+  }
+
+  Future<bool> updateProfilePicture(File imageFile) async {
+    if (state.currentUser == null) return false;
+    
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final userId = state.currentUser!.id;
+      final fileExt = imageFile.path.split('.').last;
+      final fileName = '$userId-${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+      
+      // Upload ke Supabase Storage (bucket: avatars)
+      await supabase.storage.from('avatars').upload(
+        fileName,
+        imageFile,
+        fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
+      );
+      
+      // Dapatkan public URL
+      final publicUrl = supabase.storage.from('avatars').getPublicUrl(fileName);
+      
+      // Update tabel users
+      await supabase.from('users').update({'avatar_url': publicUrl}).eq('id', userId);
+      
+      // Update state lokal
+      final updatedUser = UserModel(
+        id: state.currentUser!.id,
+        name: state.currentUser!.name,
+        email: state.currentUser!.email,
+        username: state.currentUser!.username,
+        role: state.currentUser!.role,
+        department: state.currentUser!.department,
+        avatarUrl: publicUrl,
+      );
+      
+      state = state.copyWith(currentUser: updatedUser, isLoading: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Gagal mengunggah foto profil: $e'
+      );
+      return false;
+    }
   }
 }
 
-// 3. Ganti 'StateNotifierProvider' menjadi 'NotifierProvider'
 final NotifierProvider<AuthNotifier, AuthState> authProvider = NotifierProvider<AuthNotifier, AuthState>(
   () => AuthNotifier(),
 );

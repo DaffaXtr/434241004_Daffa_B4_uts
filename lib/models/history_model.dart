@@ -33,4 +33,29 @@ class HistoryModel {
     required this.createdAt,
     required this.actorId,
   });
+
+  factory HistoryModel.fromJson(Map<String, dynamic> json) {
+    return HistoryModel(
+      id: json['id'],
+      ticketId: json['ticket_id'],
+      action: HistoryAction.values.firstWhere(
+        (e) => e.name == json['action'],
+        orElse: () => HistoryAction.created,
+      ),
+      description: json['description'],
+      createdAt: DateTime.parse(json['created_at']),
+      actorId: json['actor_id'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'ticket_id': ticketId,
+      'action': action.name,
+      'description': description,
+      'created_at': createdAt.toIso8601String(),
+      'actor_id': actorId,
+    };
+  }
 }

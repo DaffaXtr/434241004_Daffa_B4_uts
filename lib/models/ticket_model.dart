@@ -88,4 +88,45 @@ class TicketModel {
       updatedAt: DateTime.now(),
     );
   }
+
+  factory TicketModel.fromJson(Map<String, dynamic> json) {
+    return TicketModel(
+      id: json['id'],
+      title: json['title'],
+      description: json['description'],
+      status: TicketStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => TicketStatus.open,
+      ),
+      priority: TicketPriority.values.firstWhere(
+        (e) => e.name == json['priority'],
+        orElse: () => TicketPriority.low,
+      ),
+      category: TicketCategory.values.firstWhere(
+        (e) => e.name == json['category'],
+        orElse: () => TicketCategory.other,
+      ),
+      reporterId: json['reporter_id'],
+      assignedToId: json['assigned_to_id'],
+      attachments: json['attachments'] != null ? List<String>.from(json['attachments']) : [],
+      createdAt: DateTime.parse(json['created_at']),
+      updatedAt: DateTime.parse(json['updated_at']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'status': status.name,
+      'priority': priority.name,
+      'category': category.name,
+      'reporter_id': reporterId,
+      'assigned_to_id': assignedToId,
+      'attachments': attachments,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
 }

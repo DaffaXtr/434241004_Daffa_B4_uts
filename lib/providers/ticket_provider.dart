@@ -1,13 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-import '../data/dummy/dummy_tickets.dart';
-import '../data/dummy/dummy_comments.dart';
 import '../models/ticket_model.dart';
 import '../models/comment_model.dart';
+import '../models/notification_model.dart';
 import '../models/user_model.dart';
 import '../models/history_model.dart';
 import 'auth_provider.dart';
 import 'history_provider.dart';
+import 'user_provider.dart';
+import '../main.dart'; // import supabase client
 
 // ── Ticket list state
 class TicketState {
@@ -42,38 +44,35 @@ class TicketState {
   }
 }
 
-// 1. Migrasi TicketNotifier menggunakan Notifier biasa
 class TicketNotifier extends Notifier<TicketState> {
   
-  // Nilai awal didefinisikan di build() dan panggil _loadTickets() langsung di sini
   @override
   TicketState build() {
-    // Pantau perubahan user pada authProvider agar data tiket di-refresh otomatis
-    // saat terjadi proses login user baru maupun logout.
     ref.watch(authProvider.select((state) => state.currentUser));
-
-    // Karena _loadTickets bersifat synchronous dan langsung mengubah state, 
-    // kita bisa panggil atau kembalikan state awal yang sudah terisi.
     Future.microtask(() => _loadTickets());
     return const TicketState();
   }
 
-  void _loadTickets() {
+  Future<void> _loadTickets() async {
     state = state.copyWith(isLoading: true);
     final authState = ref.read(authProvider);
     final currentUser = authState.currentUser;
 
     if (currentUser == null) return;
 
-    List<TicketModel> tickets;
-    if (currentUser.role == UserRole.user) {
-      tickets = dummyTickets.where((t) => t.reporterId == currentUser.id).toList();
-    } else {
-      tickets = List.from(dummyTickets);
-    }
+    try {
+      late final List<dynamic> response;
+      if (currentUser.role == UserRole.user) {
+        response = await supabase.from('tickets').select().eq('reporter_id', currentUser.id).order('created_at', ascending: false);
+      } else {
+        response = await supabase.from('tickets').select().order('created_at', ascending: false);
+      }
 
-    tickets.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    state = state.copyWith(tickets: tickets, isLoading: false);
+      final tickets = response.map((data) => TicketModel.fromJson(data)).toList();
+      state = state.copyWith(tickets: tickets, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
   }
 
   Future<void> createTicket({
@@ -84,54 +83,118 @@ class TicketNotifier extends Notifier<TicketState> {
     List<String> attachments = const [],
   }) async {
     state = state.copyWith(isLoading: true);
-    await Future.delayed(const Duration(milliseconds: 800));
 
-    final currentUser = ref.read(authProvider).currentUser!;
-    final ticketId = 'TKT-${(state.tickets.length + 1).toString().padLeft(3, '0')}';
-    final newTicket = TicketModel(
-      id: ticketId,
-      title: title,
-      description: description,
-      status: TicketStatus.open,
-      priority: priority,
-      category: category,
-      reporterId: currentUser.id,
-      attachments: attachments,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
+    try {
+      final currentUser = ref.read(authProvider).currentUser!;
+      final newTicket = TicketModel(
+        id: const Uuid().v4(), // Menggunakan UUID v4
+        title: title,
+        description: description,
+        status: TicketStatus.open,
+        priority: priority,
+        category: category,
+        reporterId: currentUser.id,
+        attachments: attachments,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
 
-    state = state.copyWith(
-      tickets: [newTicket, ...state.tickets],
-      isLoading: false,
-    );
+      await supabase.from('tickets').insert(newTicket.toJson());
 
-    // Tambahkan log history untuk pembuatan tiket
-    ref.read(historyProvider(ticketId).notifier).addHistory(
-      action: HistoryAction.created,
-      description: 'Tiket berhasil dibuat',
-      actorId: currentUser.id,
-    );
+      state = state.copyWith(
+        tickets: [newTicket, ...state.tickets],
+        isLoading: false,
+      );
+
+      // Tambahkan log history untuk pembuatan tiket
+      ref.read(historyProvider(newTicket.id).notifier).addHistory(
+        action: HistoryAction.created,
+        description: 'Tiket berhasil dibuat',
+        actorId: currentUser.id,
+      );
+
+      // Notifikasi ke semua admin dan helpdesk
+      final allUsers = ref.read(allUsersProvider);
+      final staffUsers = allUsers.where((u) => u.role == UserRole.admin || u.role == UserRole.helpdesk);
+      
+      if (staffUsers.isNotEmpty) {
+        final notifications = staffUsers.map((staff) => NotificationModel(
+          id: const Uuid().v4(),
+          userId: staff.id,
+          title: 'Tiket Baru',
+          body: 'Tiket #${newTicket.id.substring(0,8).toUpperCase()} telah dibuat oleh ${currentUser.name}',
+          type: NotifType.ticketCreated,
+          ticketId: newTicket.id,
+          createdAt: DateTime.now(),
+        )).toList();
+        
+        await supabase.from('notifications').insert(notifications.map((n) => n.toJson()).toList());
+      }
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
   }
 
   Future<void> updateStatus(String ticketId, TicketStatus newStatus) async {
-    final idx = state.tickets.indexWhere((t) => t.id == ticketId);
-    if (idx == -1) return;
+    try {
+      await supabase.from('tickets').update({'status': newStatus.name, 'updated_at': DateTime.now().toIso8601String()}).eq('id', ticketId);
 
-    final updated = state.tickets[idx].copyWith(status: newStatus);
-    final newList = List<TicketModel>.from(state.tickets);
-    newList[idx] = updated;
-    state = state.copyWith(tickets: newList);
+      final idx = state.tickets.indexWhere((t) => t.id == ticketId);
+      if (idx == -1) return;
+
+      final updated = state.tickets[idx].copyWith(status: newStatus);
+      final newList = List<TicketModel>.from(state.tickets);
+      newList[idx] = updated;
+      state = state.copyWith(tickets: newList);
+
+      // Notifikasi ke pembuat tiket (reporter) jika yang mengubah bukan dirinya
+      final currentUser = ref.read(authProvider).currentUser;
+      if (currentUser != null && currentUser.id != updated.reporterId) {
+        final notif = NotificationModel(
+          id: const Uuid().v4(),
+          userId: updated.reporterId,
+          title: 'Status Tiket Diperbarui',
+          body: 'Status tiket #${ticketId.substring(0,8).toUpperCase()} telah diubah menjadi ${updated.statusLabel}',
+          type: NotifType.statusUpdated,
+          ticketId: ticketId,
+          createdAt: DateTime.now(),
+        );
+        await supabase.from('notifications').insert(notif.toJson());
+      }
+    } catch (e) {
+      debugPrint('Error updating status: $e');
+    }
   }
 
   Future<void> assignTicket(String ticketId, String helpdeskId) async {
-    final idx = state.tickets.indexWhere((t) => t.id == ticketId);
-    if (idx == -1) return;
+    try {
+      await supabase.from('tickets').update({'assigned_to_id': helpdeskId, 'updated_at': DateTime.now().toIso8601String()}).eq('id', ticketId);
+      
+      final idx = state.tickets.indexWhere((t) => t.id == ticketId);
+      if (idx == -1) return;
 
-    final updated = state.tickets[idx].copyWith(assignedToId: helpdeskId);
-    final newList = List<TicketModel>.from(state.tickets);
-    newList[idx] = updated;
-    state = state.copyWith(tickets: newList);
+      final updated = state.tickets[idx].copyWith(assignedToId: helpdeskId);
+      final newList = List<TicketModel>.from(state.tickets);
+      newList[idx] = updated;
+      state = state.copyWith(tickets: newList);
+
+      // Notifikasi ke staf yang ditugaskan
+      final currentUser = ref.read(authProvider).currentUser;
+      if (currentUser != null && currentUser.id != helpdeskId) {
+        final notif = NotificationModel(
+          id: const Uuid().v4(),
+          userId: helpdeskId,
+          title: 'Tiket Ditugaskan',
+          body: 'Anda telah ditugaskan untuk menangani tiket #${ticketId.substring(0,8).toUpperCase()}',
+          type: NotifType.ticketAssigned,
+          ticketId: ticketId,
+          createdAt: DateTime.now(),
+        );
+        await supabase.from('notifications').insert(notif.toJson());
+      }
+    } catch (e) {
+      debugPrint('Error assigning ticket: $e');
+    }
   }
 
   void setFilter(TicketStatus? status) {
@@ -142,39 +205,88 @@ class TicketNotifier extends Notifier<TicketState> {
   }
 }
 
-// Gunakan NotifierProvider biasa
 final NotifierProvider<TicketNotifier, TicketState> ticketProvider = NotifierProvider<TicketNotifier, TicketState>(
   () => TicketNotifier(),
 );
 
 // ── Comment provider (per tiket)
-// 1. Kembalikan ke 'Notifier' biasa, tampung ticketId via constructor
-class CommentNotifier extends Notifier<List<CommentModel>> {
+class CommentState {
+  final List<CommentModel> comments;
+  final bool isLoading;
+
+  CommentState({this.comments = const [], this.isLoading = false});
+}
+
+class CommentNotifier extends Notifier<CommentState> {
   final String ticketId;
   CommentNotifier(this.ticketId);
 
-  // 2. Override build() standar tanpa parameter, langsung gunakan ticketId dari constructor
   @override
-  List<CommentModel> build() {
-    return dummyComments.where((c) => c.ticketId == ticketId).toList();
+  CommentState build() {
+    Future.microtask(() => _loadComments());
+    return CommentState(isLoading: true);
+  }
+
+  Future<void> _loadComments() async {
+    try {
+      final response = await supabase.from('comments').select().eq('ticket_id', ticketId).order('created_at', ascending: true);
+      final comments = response.map((data) => CommentModel.fromJson(data)).toList();
+      state = CommentState(comments: comments, isLoading: false);
+    } catch (e) {
+      state = CommentState(comments: [], isLoading: false);
+    }
   }
 
   Future<void> addComment(String authorId, String content, {bool isInternal = false}) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    final comment = CommentModel(
-      id: const Uuid().v4(),
-      ticketId: ticketId,
-      authorId: authorId,
-      content: content,
-      createdAt: DateTime.now(),
-      isInternal: isInternal,
-    );
-    state = [...state, comment];
+    try {
+      final comment = CommentModel(
+        id: const Uuid().v4(),
+        ticketId: ticketId,
+        authorId: authorId,
+        content: content,
+        createdAt: DateTime.now(),
+        isInternal: isInternal,
+      );
+      
+      await supabase.from('comments').insert(comment.toJson());
+      state = CommentState(comments: [...state.comments, comment], isLoading: false);
+
+      // Notifikasi
+      final currentUser = ref.read(authProvider).currentUser;
+      final tickets = ref.read(ticketProvider).tickets;
+      final ticketIdx = tickets.indexWhere((t) => t.id == ticketId);
+      
+      if (currentUser != null && ticketIdx != -1) {
+        final ticket = tickets[ticketIdx];
+        String? targetUserId;
+        
+        if (!isInternal && currentUser.id != ticket.reporterId) {
+          // Staf komen (publik) -> notif ke reporter
+          targetUserId = ticket.reporterId;
+        } else if (currentUser.id == ticket.reporterId && ticket.assignedToId != null) {
+          // Reporter komen -> notif ke assignee
+          targetUserId = ticket.assignedToId;
+        }
+        
+        if (targetUserId != null) {
+          final notif = NotificationModel(
+            id: const Uuid().v4(),
+            userId: targetUserId,
+            title: 'Komentar Baru',
+            body: 'Ada komentar baru pada tiket #${ticketId.substring(0,8).toUpperCase()}',
+            type: NotifType.newReply,
+            ticketId: ticketId,
+            createdAt: DateTime.now(),
+          );
+          await supabase.from('notifications').insert(notif.toJson());
+        }
+      }
+    } catch (e) {
+      debugPrint('Error adding comment: $e');
+    }
   }
 }
 
-// 3. Deklarasikan NotifierProvider.family dengan mencocokkan parameter (ref, arg) di fungsi anonimnya
-// Deklarasikan NotifierProvider.family dengan membiarkan Dart menebak argumen fungsi pembuatnya
-final commentProvider = NotifierProvider.family<CommentNotifier, List<CommentModel>, String>(
+final commentProvider = NotifierProvider.family<CommentNotifier, CommentState, String>(
   (ticketId) => CommentNotifier(ticketId),
 );

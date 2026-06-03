@@ -19,6 +19,33 @@ class UserModel {
     required this.department,
   });
 
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: json['id'] ?? '',
+      name: json['name'] ?? 'Unknown',
+      email: json['email'] ?? '',
+      username: json['username'] ?? '',
+      role: UserRole.values.firstWhere(
+        (e) => e.name == json['role'],
+        orElse: () => UserRole.user,
+      ),
+      avatarUrl: json['avatar_url'],
+      department: json['department'] ?? 'Umum',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'username': username,
+      'role': role.name,
+      'avatar_url': avatarUrl,
+      'department': department,
+    };
+  }
+
   String get roleLabel {
     switch (role) {
       case UserRole.admin:

@@ -1,37 +1,58 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-import '../data/dummy/dummy_histories.dart';
 import '../models/history_model.dart';
+import '../main.dart'; // import supabase client
 
-class HistoryNotifier extends Notifier<List<HistoryModel>> {
+class HistoryState {
+  final List<HistoryModel> histories;
+  final bool isLoading;
+
+  HistoryState({this.histories = const [], this.isLoading = false});
+}
+
+class HistoryNotifier extends Notifier<HistoryState> {
   final String ticketId;
   HistoryNotifier(this.ticketId);
 
   @override
-  List<HistoryModel> build() {
-    final histories = dummyHistories.where((h) => h.ticketId == ticketId).toList();
-    histories.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return histories;
+  HistoryState build() {
+    Future.microtask(() => _loadHistories());
+    return HistoryState(isLoading: true);
   }
 
-  void addHistory({
+  Future<void> _loadHistories() async {
+    try {
+      final response = await supabase.from('histories').select().eq('ticket_id', ticketId).order('created_at', ascending: false);
+      final histories = response.map((data) => HistoryModel.fromJson(data)).toList();
+      state = HistoryState(histories: histories, isLoading: false);
+    } catch (e) {
+      state = HistoryState(histories: [], isLoading: false);
+    }
+  }
+
+  Future<void> addHistory({
     required HistoryAction action,
     required String description,
     required String actorId,
-  }) {
-    final history = HistoryModel(
-      id: const Uuid().v4(),
-      ticketId: ticketId,
-      action: action,
-      description: description,
-      createdAt: DateTime.now(),
-      actorId: actorId,
-    );
-    
-    state = [history, ...state];
+  }) async {
+    try {
+      final history = HistoryModel(
+        id: const Uuid().v4(),
+        ticketId: ticketId,
+        action: action,
+        description: description,
+        createdAt: DateTime.now(),
+        actorId: actorId,
+      );
+      
+      await supabase.from('histories').insert(history.toJson());
+      state = HistoryState(histories: [history, ...state.histories], isLoading: false);
+    } catch (e) {
+      // Handle error
+    }
   }
 }
 
-final historyProvider = NotifierProvider.family<HistoryNotifier, List<HistoryModel>, String>(
+final historyProvider = NotifierProvider.family<HistoryNotifier, HistoryState, String>(
   (ticketId) => HistoryNotifier(ticketId),
 );

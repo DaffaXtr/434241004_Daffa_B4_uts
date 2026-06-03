@@ -6,6 +6,7 @@ import '../../providers/dashboard_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/ticket_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/user_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../models/user_model.dart';
@@ -33,43 +34,64 @@ class DashboardScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBg : AppColors.primaryLight,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSizes.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // HEADER
-              Row(
+        child: Column(
+          children: [
+            // STICKY HEADER
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSizes.md, AppSizes.md, AppSizes.md, 0),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Text(
-                          'Hi, ${user.name.split(' ')[0]}',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? AppColors.white : AppColors.primaryDark,
-                          ),
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: AppColors.primary,
+                          backgroundImage: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+                          child: user.avatarUrl == null
+                              ? Text(
+                                  user.name[0].toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                )
+                              : null,
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.work_outline,
-                              size: 16,
-                              color: isDark ? AppColors.grey400 : AppColors.grey600,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              user.roleLabel,
-                              style: TextStyle(
-                                color: isDark ? AppColors.grey400 : AppColors.grey600,
-                                fontSize: 14,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Hi, ${user.name.split(' ')[0]}',
+                                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? AppColors.white : AppColors.primaryDark,
+                                  fontSize: 22,
+                                ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.work_outline,
+                                    size: 14,
+                                    color: isDark ? AppColors.grey400 : AppColors.grey600,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    user.roleLabel,
+                                    style: TextStyle(
+                                      color: isDark ? AppColors.grey400 : AppColors.grey600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -117,26 +139,28 @@ class DashboardScreen extends ConsumerWidget {
                             ),
                         ],
                       ),
-                      const SizedBox(width: 8),
-                      // Avatar
-                      CircleAvatar(
-                        radius: 24,
-                        backgroundColor: AppColors.primary,
-                        child: Text(
-                          user.name[0],
-                          style: const TextStyle(
-                            color: AppColors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ],
               ),
-              const SizedBox(height: AppSizes.xl),
+            ),
+            const SizedBox(height: AppSizes.md),
 
+            // SCROLLABLE CONTENT
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(allUsersProvider);
+                  ref.invalidate(ticketProvider);
+                  ref.invalidate(dashboardStatsProvider);
+                  await Future.delayed(const Duration(milliseconds: 500));
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.sm),
+                  child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
               // OVERALL TASK COMPLETION CARD (With Premium Gradient)
               Container(
                 padding: const EdgeInsets.all(AppSizes.lg),
@@ -346,8 +370,12 @@ class DashboardScreen extends ConsumerWidget {
                 ),
 
               const SizedBox(height: AppSizes.xxl),
-            ],
-          ),
+                  ],
+                ),
+              ),
+            ),
+            ),
+          ],
         ),
       ),
       floatingActionButton: user.role == UserRole.user

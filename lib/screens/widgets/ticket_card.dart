@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/ticket_model.dart';
+import '../../models/user_model.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
-import '../../data/dummy/dummy_users.dart';
-import '../../data/dummy/dummy_comments.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/user_provider.dart';
+import '../../providers/ticket_provider.dart';
 import 'status_badge.dart';
 
-class TicketCard extends StatelessWidget {
+class TicketCard extends ConsumerWidget {
   final TicketModel ticket;
 
   const TicketCard({super.key, required this.ticket});
@@ -39,24 +42,37 @@ class TicketCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final baseColor = _getStatusColor(ticket.status);
     final bgColor = isDark ? AppColors.darkSurface : Colors.white;
 
     // Get dummy avatars
-    final reporter = dummyUsers.firstWhere(
-      (u) => u.id == ticket.reporterId, 
-      orElse: () => dummyUsers.first
+    final allUsers = ref.watch(allUsersProvider);
+
+    final currentUser = ref.watch(authProvider).currentUser;
+
+    final reporter = allUsers.firstWhere(
+      (u) => u.id == ticket.reporterId,
+      orElse: () => currentUser?.id == ticket.reporterId
+          ? currentUser!
+          : const UserModel(
+              id: 'unknown', name: 'Unknown', email: '', username: '', role: UserRole.user, department: '',
+            ),
     );
-    final assignee = ticket.assignedToId != null 
-        ? dummyUsers.firstWhere(
+
+    final assignee = ticket.assignedToId != null
+        ? allUsers.firstWhere(
             (u) => u.id == ticket.assignedToId,
-            orElse: () => dummyUsers.first
-          ) 
+            orElse: () => currentUser?.id == ticket.assignedToId
+                ? currentUser!
+                : const UserModel(
+                    id: 'unknown', name: 'Unknown', email: '', username: '', role: UserRole.user, department: '',
+                  ),
+          )
         : null;
         
-    final commentCount = dummyComments.where((c) => c.ticketId == ticket.id).length;
+    final commentCount = ref.watch(commentProvider(ticket.id)).comments.length;
 
     // Build the pill style
     Widget buildPill(String text, Color color) {

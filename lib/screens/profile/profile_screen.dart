@@ -1,13 +1,64 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/navigation_provider.dart';
+import '../../providers/user_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  final ImagePicker _picker = ImagePicker();
+  bool _isUploading = false;
+
+  Future<void> _pickAndUploadImage() async {
+    try {
+      // Buka galeri dan kompres foto secara otomatis
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70, // Kompresi kualitas
+        maxWidth: 800,    // Kompresi ukuran maksimal
+        maxHeight: 800,
+      );
+
+      if (image == null) return;
+
+      setState(() {
+        _isUploading = true;
+      });
+
+      final success = await ref.read(authProvider.notifier).updateProfilePicture(File(image.path));
+      
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Foto profil berhasil diperbarui')));
+        } else {
+          final error = ref.read(authProvider).errorMessage ?? 'Gagal memperbarui foto profil';
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Terjadi kesalahan: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+    }
+  }
 
   Widget _buildDetailRow(BuildContext context, String label, String value) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -94,6 +145,8 @@ class ProfileScreen extends ConsumerWidget {
                         onPressed: () {
                           Navigator.pop(context); // Close dialog
                           ref.read(authProvider.notifier).logout();
+                          ref.invalidate(navigationIndexProvider); // Reset navbar
+                          ref.invalidate(allUsersProvider); // Reset allUsers cache
                           context.go('/login');
                         },
                         style: ElevatedButton.styleFrom(
@@ -119,7 +172,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final user = ref.watch(authProvider).currentUser;
     final themeMode = ref.watch(themeProvider);
     final isDark = themeMode == ThemeMode.dark;
@@ -170,31 +223,54 @@ class ProfileScreen extends ConsumerWidget {
                                 offset: const Offset(0, 10),
                               ),
                             ],
+                            image: user.avatarUrl != null
+                                ? DecorationImage(
+                                    image: NetworkImage(user.avatarUrl!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
                           ),
-                          child: Center(
-                            child: Text(
-                              user.name[0].toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 48,
-                                color: AppColors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          child: user.avatarUrl == null
+                              ? Center(
+                                  child: Text(
+                                    user.name[0].toUpperCase(),
+                                    style: const TextStyle(
+                                      fontSize: 48,
+                                      color: AppColors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                )
+                              : null,
+                        ),
+                        if (_isUploading)
+                          Container(
+                            width: 110,
+                            height: 110,
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: CircularProgressIndicator(color: Colors.white),
                             ),
                           ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: isDark ? AppColors.darkSurface : Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 5)
-                            ]
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            size: 18,
-                            color: AppColors.primary,
+                        GestureDetector(
+                          onTap: _isUploading ? null : _pickAndUploadImage,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.darkSurface : Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 5)
+                              ]
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              size: 18,
+                              color: AppColors.primary,
+                            ),
                           ),
                         ),
                       ],

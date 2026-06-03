@@ -5,7 +5,7 @@ import '../../models/ticket_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/ticket_provider.dart';
-import '../../data/dummy/dummy_users.dart';
+import '../../providers/user_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../widgets/status_badge.dart';
@@ -50,7 +50,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
   }
 
   void _showAssignBottomSheet(BuildContext context, String ticketId) {
-    final staffUsers = dummyUsers
+    final staffUsers = ref.read(allUsersProvider)
         .where((u) => u.role == UserRole.helpdesk || u.role == UserRole.admin)
         .toList();
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -240,29 +240,40 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final tickets = ref.watch(ticketProvider).tickets;
-    final currentUser = ref.watch(authProvider).currentUser!;
-    final comments = ref.watch(commentProvider(widget.ticketId));
-    final histories = ref.watch(historyProvider(widget.ticketId));
+    final ticketState = ref.watch(ticketProvider);
+    final tickets = ticketState.tickets;
+    final currentUser = ref.watch(authProvider).currentUser;
+    
+    if (currentUser == null || ticketState.isLoading || tickets.isEmpty) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final comments = ref.watch(commentProvider(widget.ticketId)).comments;
+    final histories = ref.watch(historyProvider(widget.ticketId)).histories;
+    final allUsers = ref.watch(allUsersProvider);
 
     final ticket = tickets.firstWhere(
       (t) => t.id == widget.ticketId,
-      orElse: () => throw Exception('Ticket not found'),
+      orElse: () => tickets.first,
     );
 
-    final reporter = dummyUsers.firstWhere(
+    final reporter = allUsers.firstWhere(
       (u) => u.id == ticket.reporterId,
-      orElse: () => const UserModel(
-        id: 'unknown', name: 'Unknown', email: '', username: '', role: UserRole.user, department: '',
-      ),
+      orElse: () => currentUser.id == ticket.reporterId 
+          ? currentUser
+          : const UserModel(
+              id: 'unknown', name: 'Unknown', email: '', username: '', role: UserRole.user, department: '',
+            ),
     );
 
     final assignee = ticket.assignedToId != null
-        ? dummyUsers.firstWhere(
+        ? allUsers.firstWhere(
             (u) => u.id == ticket.assignedToId,
-            orElse: () => const UserModel(
-              id: 'unknown', name: 'Unknown', email: '', username: '', role: UserRole.user, department: '',
-            ),
+            orElse: () => currentUser.id == ticket.assignedToId
+                ? currentUser
+                : const UserModel(
+                    id: 'unknown', name: 'Unknown', email: '', username: '', role: UserRole.user, department: '',
+                  ),
           )
         : null;
 
@@ -299,15 +310,26 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
             ),
             
             Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSizes.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(allUsersProvider);
+                  ref.invalidate(ticketProvider);
+                  ref.invalidate(commentProvider(widget.ticketId));
+                  ref.invalidate(historyProvider(widget.ticketId));
+                  await Future.delayed(const Duration(milliseconds: 500));
+                },
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(AppSizes.lg, AppSizes.lg, AppSizes.lg, 0),
+                    sliver: SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                       // ID
                       Text(
-                        ticket.id,
+                        'Tiket #${ticket.id.substring(0, 8).toUpperCase()}',
                         style: TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,
@@ -417,27 +439,45 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                       ),
                       const SizedBox(height: 32),
 
-                      // Custom Tabs
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkContainer : Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            if (!isDark)
-                              BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(child: _buildCustomTab(0, 'Komentar', Icons.chat_bubble_outline)),
-                            Expanded(child: _buildCustomTab(1, 'Riwayat', Icons.history)),
-                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _StickyTabBarDelegate(
+                      height: 56, // Fixed height for tabs
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg, vertical: 4),
+                        // Transparent color to match background but prevent seeing text underneath
+                        color: isDark ? AppColors.darkBg : AppColors.primaryLight,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.darkContainer : Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              if (!isDark)
+                                BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(child: _buildCustomTab(0, 'Komentar', Icons.chat_bubble_outline)),
+                              Expanded(child: _buildCustomTab(1, 'Riwayat', Icons.history)),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-
-                      // Tab Content
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.all(AppSizes.lg),
+                    sliver: SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Tab Content
                       if (_selectedTab == 0) ...[
                         if (comments.isEmpty)
                           Center(
@@ -459,11 +499,14 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                       ] else ...[
                         HistoryTimeline(histories: histories),
                       ],
-                      const SizedBox(height: 80), // Padding for bottom input
-                    ],
+                          const SizedBox(height: 80), // Padding for bottom input
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
+            ),
             ),
             
             if (_selectedTab == 0)
@@ -676,4 +719,25 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
       ),
     );
   }
+}
+
+class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+
+  _StickyTabBarDelegate({required this.child, required this.height});
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return child;
+  }
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  double get minExtent => height;
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) => true;
 }

@@ -23,7 +23,8 @@ class NotificationScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notifs = ref.watch(notificationProvider);
+    final notificationState = ref.watch(notificationProvider);
+    final notifs = notificationState.notifications;
     final unreadCount = notifs.where((n) => !n.isRead).length;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -106,7 +107,9 @@ class NotificationScreen extends ConsumerWidget {
             
             // Notification List
             Expanded(
-              child: notifs.isEmpty
+              child: notificationState.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : notifs.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,

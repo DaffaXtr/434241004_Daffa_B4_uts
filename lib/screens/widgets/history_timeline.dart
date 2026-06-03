@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/history_model.dart';
 import '../../models/user_model.dart';
-import '../../data/dummy/dummy_users.dart';
+import '../../providers/user_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 
-class HistoryTimeline extends StatelessWidget {
+class HistoryTimeline extends ConsumerWidget {
   final List<HistoryModel> histories;
 
   const HistoryTimeline({super.key, required this.histories});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (histories.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSizes.md),
@@ -22,6 +23,9 @@ class HistoryTimeline extends StatelessWidget {
       );
     }
 
+    final allUsers = ref.watch(allUsersProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -30,7 +34,7 @@ class HistoryTimeline extends StatelessWidget {
         final history = histories[index];
         final isLast = index == histories.length - 1;
 
-        final actor = dummyUsers.firstWhere(
+        final actor = allUsers.firstWhere(
           (u) => u.id == history.actorId,
           orElse: () => const UserModel(
             id: 'unknown',
@@ -91,7 +95,7 @@ class HistoryTimeline extends StatelessWidget {
                       Expanded(
                         child: Container(
                           width: 2,
-                          color: AppColors.grey300,
+                          color: isDark ? AppColors.grey800 : AppColors.grey300,
                         ),
                       ),
                     if (isLast)
@@ -135,7 +139,7 @@ class HistoryTimeline extends StatelessWidget {
                       Text(
                         'Oleh: ${actor.name}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.grey600,
+                          color: isDark ? AppColors.grey500 : AppColors.grey600,
                         ),
                       ),
                     ],

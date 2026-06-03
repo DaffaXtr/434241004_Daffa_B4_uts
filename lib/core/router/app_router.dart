@@ -14,12 +14,11 @@ import '/screens/notification/notification_screen.dart';
 import '/screens/profile/profile_screen.dart';
 import '/screens/layout/main_layout.dart';
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  final isLoggedIn = ref.watch(authProvider.select((state) => state.isLoggedIn));
 
   return GoRouter(
     initialLocation: '/splash',
     redirect: (context, state) {
-      final isLoggedIn = authState.isLoggedIn;
       final isAtSplash = state.matchedLocation == '/splash';
       final isAtLogin = state.matchedLocation == '/login';
       final isAtRegister = state.matchedLocation == '/register';

@@ -70,6 +70,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         const SnackBar(content: Text('Registrasi berhasil! Silakan masuk')),
       );
       context.go('/login');
+    } else {
+      final error = ref.read(authProvider).errorMessage;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error ?? 'Registrasi gagal')),
+      );
     }
   }
 

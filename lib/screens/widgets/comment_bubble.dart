@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/comment_model.dart';
 import '../../models/user_model.dart';
-import '../../data/dummy/dummy_users.dart';
+import '../../providers/user_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 
-class CommentBubble extends StatelessWidget {
+class CommentBubble extends ConsumerWidget {
   final CommentModel comment;
   final String currentUserId;
   final bool isStaff;
@@ -28,13 +29,16 @@ class CommentBubble extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Komentar internal hanya tampil jika isStaff
     if (comment.isInternal && !isStaff) {
       return const SizedBox.shrink();
     }
 
-    final author = dummyUsers.firstWhere(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final allUsers = ref.watch(allUsersProvider);
+    final author = allUsers.firstWhere(
       (u) => u.id == comment.authorId,
       orElse: () => const UserModel(
         id: 'unknown',
@@ -77,7 +81,7 @@ class CommentBubble extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isCurrentUser
                     ? AppColors.primary
-                    : (Theme.of(context).brightness == Brightness.dark
+                    : (isDark
                         ? AppColors.darkContainer
                         : Colors.white),
                 borderRadius: BorderRadius.only(
@@ -87,16 +91,17 @@ class CommentBubble extends StatelessWidget {
                   bottomRight: Radius.circular(isCurrentUser ? 0 : 20),
                 ),
                 boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
+                  if (!isDark)
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
                 ],
                 border: Border.all(
                   color: comment.isInternal
                       ? AppColors.statusOpen
-                      : (isCurrentUser ? AppColors.primary : Colors.black.withValues(alpha: 0.02)),
+                      : (isCurrentUser ? AppColors.primary : (isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.02))),
                 ),
               ),
               child: Column(
@@ -105,7 +110,7 @@ class CommentBubble extends StatelessWidget {
                   Text(
                     author.name,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: isCurrentUser ? Colors.white70 : null,
+                      color: isCurrentUser ? Colors.white70 : (isDark ? Colors.white70 : AppColors.grey700),
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -114,7 +119,7 @@ class CommentBubble extends StatelessWidget {
                   Text(
                     comment.content,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: isCurrentUser ? Colors.white : null,
+                      color: isCurrentUser ? Colors.white : (isDark ? Colors.white : Colors.black87),
                       height: 1.3,
                     ),
                   ),

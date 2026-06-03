@@ -19,9 +19,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // Auto-fill for testing/demo purposes, but keeping the UI clean
-    _usernameCtrl.text = 'admin_rini';
-    _passwordCtrl.text = '123456';
   }
 
   @override
