@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/ticket_model.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_sizes.dart';
 
 class StatusBadge extends StatelessWidget {
   final TicketStatus status;
@@ -42,8 +41,8 @@ class StatusBadge extends StatelessWidget {
         vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: _color.withOpacity(0.1),
-        border: Border.all(color: _color.withOpacity(0.5), width: 0.5),
+        color: _color.withValues(alpha: 0.1),
+        border: Border.all(color: _color.withValues(alpha: 0.5), width: 0.5),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(

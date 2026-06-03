@@ -49,7 +49,7 @@ class ProfileScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.logout, color: Colors.red, size: 32),
@@ -165,7 +165,7 @@ class ProfileScreen extends ConsumerWidget {
                             border: Border.all(color: isDark ? AppColors.darkBg : Colors.white, width: 4),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary.withOpacity(0.3),
+                                color: AppColors.primary.withValues(alpha: 0.3),
                                 blurRadius: 20,
                                 offset: const Offset(0, 10),
                               ),
@@ -188,7 +188,7 @@ class ProfileScreen extends ConsumerWidget {
                             color: isDark ? AppColors.darkSurface : Colors.white,
                             shape: BoxShape.circle,
                             boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 5)
+                              BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 5)
                             ]
                           ),
                           child: const Icon(
@@ -213,7 +213,7 @@ class ProfileScreen extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -236,7 +236,7 @@ class ProfileScreen extends ConsumerWidget {
                         boxShadow: [
                           if (!isDark)
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.02),
+                              color: Colors.black.withValues(alpha: 0.02),
                               blurRadius: 15,
                               spreadRadius: 2,
                               offset: const Offset(0, 8),
@@ -267,7 +267,7 @@ class ProfileScreen extends ConsumerWidget {
                         boxShadow: [
                           if (!isDark)
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.02),
+                              color: Colors.black.withValues(alpha: 0.02),
                               blurRadius: 15,
                               spreadRadius: 2,
                               offset: const Offset(0, 8),
@@ -281,7 +281,7 @@ class ProfileScreen extends ConsumerWidget {
                         trailing: Switch(
                           value: isDark,
                           onChanged: (value) => ref.read(themeProvider.notifier).toggle(),
-                          activeColor: AppColors.primary,
+                          activeThumbColor: AppColors.primary,
                         ),
                         onTap: () => ref.read(themeProvider.notifier).toggle(),
                       ),
@@ -297,7 +297,7 @@ class ProfileScreen extends ConsumerWidget {
                         icon: const Icon(Icons.logout),
                         label: const Text('Keluar Akun', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red.withOpacity(0.1),
+                          backgroundColor: Colors.red.withValues(alpha: 0.1),
                           foregroundColor: Colors.red,
                           elevation: 0,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -334,7 +334,7 @@ class ProfileScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: AppColors.primary, size: 20),

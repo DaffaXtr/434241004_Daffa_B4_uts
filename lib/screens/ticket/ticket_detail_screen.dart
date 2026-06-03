@@ -40,15 +40,6 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     super.dispose();
   }
 
-  Color _getStatusColor(TicketStatus status) {
-    switch (status) {
-      case TicketStatus.open: return AppColors.statusOpen;
-      case TicketStatus.inProgress: return AppColors.statusInProgress;
-      case TicketStatus.resolved: return AppColors.statusResolved;
-      case TicketStatus.closed: return AppColors.statusClosed;
-    }
-  }
-
   Color _getPriorityColor(TicketPriority priority) {
     switch (priority) {
       case TicketPriority.low: return AppColors.priorityLow;
@@ -97,13 +88,13 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: staffUsers.length,
-              separatorBuilder: (context, index) => Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
+              separatorBuilder: (context, index) => Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
               itemBuilder: (context, index) {
                 final staff = staffUsers[index];
                 return ListTile(
                   contentPadding: const EdgeInsets.symmetric(vertical: 4),
                   leading: CircleAvatar(
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                     child: Text(staff.name[0], style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                   ),
                   title: Text(staff.name, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -111,7 +102,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -207,7 +198,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: isSelected ? color.withOpacity(0.1) : (isDark ? AppColors.darkContainer : Colors.white),
+                      color: isSelected ? color.withValues(alpha: 0.1) : (isDark ? AppColors.darkContainer : Colors.white),
                       border: Border.all(
                         color: isSelected ? color : (isDark ? Colors.white12 : Colors.black12),
                       ),
@@ -353,14 +344,14 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                         decoration: BoxDecoration(
                           color: isDark ? AppColors.darkContainer : Colors.white,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: isDark ? Colors.transparent : Colors.grey.withOpacity(0.1)),
+                          border: Border.all(color: isDark ? Colors.transparent : Colors.grey.withValues(alpha: 0.1)),
                         ),
                         child: Column(
                           children: [
                             _buildInfoRow('Reporter', reporter.name, isDark),
-                            Divider(height: 24, thickness: 1, color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
+                            Divider(height: 24, thickness: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
                             _buildInfoRow('Ditugaskan ke', assignee?.name ?? 'Belum ada', isDark),
-                            Divider(height: 24, thickness: 1, color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
+                            Divider(height: 24, thickness: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
                             _buildInfoRow('Dibuat', '${ticket.createdAt.day}/${ticket.createdAt.month}/${ticket.createdAt.year}', isDark),
                           ],
                         ),
@@ -378,7 +369,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                                   icon: const Icon(Icons.person_add_alt_1, size: 18),
                                   label: const Text('Tugaskan'),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                                     foregroundColor: AppColors.primary,
                                     elevation: 0,
                                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -434,7 +425,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             if (!isDark)
-                              BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10),
+                              BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10),
                           ],
                         ),
                         child: Row(
@@ -487,9 +478,9 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Text(
         label,
@@ -571,7 +562,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
         border: Border(top: BorderSide(color: isDark ? Colors.white10 : Colors.grey.shade200)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             offset: const Offset(0, -10),
             blurRadius: 20,
           ),
@@ -656,7 +647,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.3),
+                        color: AppColors.primary.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),

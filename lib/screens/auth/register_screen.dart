@@ -197,7 +197,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 16.0),
                 child: DropdownButtonFormField<String>(
-                  value: _selectedDepartment,
+                  initialValue: _selectedDepartment,
                   dropdownColor: isDark ? AppColors.darkSurface : Colors.white,
                   items: _departments
                       .map((dept) => DropdownMenuItem(

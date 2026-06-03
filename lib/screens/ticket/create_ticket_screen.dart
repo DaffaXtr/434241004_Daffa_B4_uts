@@ -217,7 +217,7 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                         ),
                         child: Column(
                           children: [
-                            Icon(Icons.cloud_upload_outlined, size: 48, color: AppColors.primary.withOpacity(0.5)),
+                            Icon(Icons.cloud_upload_outlined, size: 48, color: AppColors.primary.withValues(alpha: 0.5)),
                             const SizedBox(height: 8),
                             Text('Ketuk untuk mengunggah gambar/file', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54)),
                             const SizedBox(height: 4),
@@ -235,7 +235,7 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                             .map((file) => Chip(
                                   label: Text(file),
                                   onDeleted: () => setState(() => _attachments.remove(file)),
-                                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                                   deleteIconColor: AppColors.primary,
                                 ))
                             .toList(),

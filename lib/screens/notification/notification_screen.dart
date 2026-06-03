@@ -157,7 +157,7 @@ class NotificationScreen extends ConsumerWidget {
                                 boxShadow: [
                                   if (!isDark)
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.03),
+                                      color: Colors.black.withValues(alpha: 0.03),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     ),
@@ -184,7 +184,7 @@ class NotificationScreen extends ConsumerWidget {
                                               decoration: BoxDecoration(
                                                 color: notif.isRead 
                                                     ? (isDark ? AppColors.darkBg : Colors.grey.shade100)
-                                                    : AppColors.primary.withOpacity(0.1),
+                                                    : AppColors.primary.withValues(alpha: 0.1),
                                                 borderRadius: BorderRadius.circular(12),
                                               ),
                                               child: Icon(

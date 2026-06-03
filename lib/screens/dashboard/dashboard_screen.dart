@@ -152,7 +152,7 @@ class DashboardScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(AppSizes.radiusLg),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.3),
+                      color: AppColors.primary.withValues(alpha: 0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 8),
                     ),
@@ -169,7 +169,7 @@ class DashboardScreen extends ConsumerWidget {
                           CircularProgressIndicator(
                             value: 1.0, // Background circle
                             strokeWidth: 8,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.2)),
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.2)),
                           ),
                           CircularProgressIndicator(
                             value: completionRate,
@@ -211,7 +211,7 @@ class DashboardScreen extends ConsumerWidget {
                                 ? 'Persentase tiket Anda yang sudah terselesaikan.'
                                 : 'Pencapaian penyelesaian tiket secara keseluruhan.',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                               fontSize: 12,
                             ),
                           ),
@@ -391,7 +391,7 @@ class DashboardScreen extends ConsumerWidget {
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 15,
               spreadRadius: 0,
               offset: const Offset(0, 8),
@@ -474,7 +474,7 @@ class DashboardScreen extends ConsumerWidget {
                           height: 6,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.15),
+                            color: color.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(3),
                           ),
                         ),
@@ -487,7 +487,7 @@ class DashboardScreen extends ConsumerWidget {
                               borderRadius: BorderRadius.circular(3),
                               boxShadow: [
                                 BoxShadow(
-                                  color: color.withOpacity(0.5),
+                                  color: color.withValues(alpha: 0.5),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 )

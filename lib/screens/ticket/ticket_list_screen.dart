@@ -37,7 +37,7 @@ class TicketListScreen extends ConsumerWidget {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               if (!isDark && !isSelected)
-                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4),
             ],
           ),
           child: Text(
@@ -98,7 +98,7 @@ class TicketListScreen extends ConsumerWidget {
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                          color: isDark ? Colors.transparent : Colors.black.withOpacity(0.05),
+                          color: isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.05),
                           width: 1,
                         ),
                       ),

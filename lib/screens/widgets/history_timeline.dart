@@ -82,7 +82,7 @@ class HistoryTimeline extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: iconColor.withOpacity(0.1),
+                        color: iconColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(iconData, size: 20, color: iconColor),
